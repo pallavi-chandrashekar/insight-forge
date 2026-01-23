@@ -10,7 +10,7 @@ class LLMService:
     """Service for LLM-powered features"""
 
     def __init__(self):
-        self.client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+        self.client = AsyncAnthropic(api_key=settings.API_KEY)
         self.model = settings.LLM_MODEL
         self.max_tokens = settings.LLM_MAX_TOKENS
 

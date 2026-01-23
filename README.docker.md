@@ -14,7 +14,7 @@
    cp .env.example .env
 
    # Edit .env and add your Anthropic API key
-   # ANTHROPIC_API_KEY=your-actual-api-key-here
+   # API_KEY=your-actual-api-key-here
    ```
 
 2. **Start all services**

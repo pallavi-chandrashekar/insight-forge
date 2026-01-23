@@ -115,7 +115,7 @@ The frontend will be available at `http://localhost:5173`.
 |----------|-------------|----------|
 | `DATABASE_URL` | PostgreSQL connection string | Yes |
 | `SECRET_KEY` | JWT signing key | Yes |
-| `ANTHROPIC_API_KEY` | Claude API key for NL queries | Yes |
+| `API_KEY` | Claude API key for NL queries | Yes |
 | `CORS_ORIGINS` | Allowed frontend origins | Yes |
 | `REDIS_URL` | Redis connection (optional) | No |
 | `TABLEAU_PUBLIC_ENABLED` | Enable Tableau export | No |

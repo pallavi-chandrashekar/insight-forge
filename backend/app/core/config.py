@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE: int = 100  # MB
 
     # LLM
-    ANTHROPIC_API_KEY: str
+    API_KEY: str
     LLM_MODEL: str = "claude-sonnet-4-5-20250929"
     LLM_MAX_TOKENS: int = 4096
 

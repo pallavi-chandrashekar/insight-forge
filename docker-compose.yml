@@ -30,7 +30,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/insightforge
       SECRET_KEY: dev-secret-key-change-in-production
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-your-api-key-here}
+      API_KEY: ${API_KEY:-your-api-key-here}
       DEBUG: "True"
       ENVIRONMENT: development
       CORS_ORIGINS: http://localhost:5173,http://localhost:3000
