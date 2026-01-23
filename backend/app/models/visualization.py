@@ -1,0 +1,54 @@
+from sqlalchemy import Column, String, DateTime, Text, ForeignKey, Enum
+from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+import uuid
+import enum
+
+from app.core.database import Base
+
+
+class ChartType(str, enum.Enum):
+    BAR = "bar"
+    LINE = "line"
+    SCATTER = "scatter"
+    PIE = "pie"
+    HISTOGRAM = "histogram"
+    HEATMAP = "heatmap"
+    BOX = "box"
+    AREA = "area"
+    TABLE = "table"
+
+
+class Visualization(Base):
+    __tablename__ = "visualizations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    dataset_id = Column(UUID(as_uuid=True), ForeignKey("datasets.id", ondelete="CASCADE"), nullable=False)
+    query_id = Column(UUID(as_uuid=True), ForeignKey("queries.id", ondelete="SET NULL"), nullable=True)
+
+    name = Column(String(255), nullable=True)
+    description = Column(Text, nullable=True)
+    chart_type = Column(Enum(ChartType), nullable=False)
+
+    # Chart configuration (columns, aggregations, colors, etc.)
+    config = Column(JSONB, nullable=False)
+
+    # Generated chart data (Plotly JSON or image path)
+    chart_data = Column(JSONB, nullable=True)
+    image_path = Column(String(512), nullable=True)
+
+    # Tableau export info
+    tableau_workbook_url = Column(String(1024), nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User", back_populates="visualizations")
+    dataset = relationship("Dataset", back_populates="visualizations")
+    query = relationship("Query", back_populates="visualizations")
+
+    def __repr__(self):
+        return f"<Visualization {self.name}>"
