@@ -9,26 +9,26 @@ InsightForge is a multi-user data analysis platform built with a modern microser
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                           Client Layer                                  │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │                      React Application                            │  │
-│  │  • Vite Build Tool                                                │  │
-│  │  • TypeScript for type safety                                     │  │
-│  │  • TailwindCSS for styling                                        │  │
-│  │  • State Management (Zustand/Redux)                               │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │                      React Application                           │   │
+│  │  • Vite Build Tool                                               │   │
+│  │  • TypeScript for type safety                                    │   │
+│  │  • TailwindCSS for styling                                       │   │
+│  │  • State Management (Zustand/Redux)                              │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────┘
                                    │
                                    │ HTTPS/REST API
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         API Gateway Layer                               │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │                      FastAPI Application                          │  │
-│  │  • CORS Middleware                                                │  │
-│  │  • JWT Authentication                                             │  │
-│  │  • Request Validation (Pydantic)                                  │  │
-│  │  • OpenAPI Documentation                                          │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │                      FastAPI Application                         │   │
+│  │  • CORS Middleware                                               │   │
+│  │  • JWT Authentication                                            │   │
+│  │  • Request Validation (Pydantic)                                 │   │
+│  │  • OpenAPI Documentation                                         │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────┘
                                    │
                     ┌──────────────┼──────────────┐
@@ -36,42 +36,42 @@ InsightForge is a multi-user data analysis platform built with a modern microser
                     ▼              ▼              ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                          Service Layer                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌────────────┐ │
-│  │    Auth      │  │    Data      │  │    Query     │  │    Viz     │ │
-│  │   Service    │  │   Service    │  │   Engine     │  │  Service   │ │
-│  └──────────────┘  └──────────────┘  └──────────────┘  └────────────┘ │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌────────────┐   │
+│  │    Auth      │  │    Data      │  │    Query     │  │    Viz     │   │
+│  │   Service    │  │   Service    │  │   Engine     │  │  Service   │   │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └────────────┘   │
 │         │                 │                  │                │         │
 │         │                 └──────────┬───────┘                │         │
 │         │                            │                        │         │
 │         │                            ▼                        │         │
-│         │                   ┌──────────────┐                 │         │
-│         │                   │     LLM      │                 │         │
-│         │                   │   Service    │                 │         │
-│         │                   │  (Claude)    │                 │         │
-│         │                   └──────────────┘                 │         │
-└─────────┼────────────────────────────┼──────────────────────┼──────────┘
-          │                            │                       │
-          ▼                            ▼                       ▼
+│         │                   ┌──────────────┐                  │         │
+│         │                   │     LLM      │                  │         │
+│         │                   │   Service    │                  │         │
+│         │                   │  (Claude)    │                  │         │
+│         │                   └──────────────┘                  │         │
+└─────────┼────────────────────────────┼──────────────────────┼───────────┘
+          │                            │                        │
+          ▼                            ▼                        ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                        Data Layer                                       │
-│  ┌──────────────────────┐  ┌──────────────┐  ┌──────────────────────┐ │
-│  │    PostgreSQL        │  │    Redis     │  │   File Storage       │ │
-│  │  ┌───────────────┐   │  │  (Optional)  │  │   (Local/Cloud)      │ │
-│  │  │  Users        │   │  │              │  │                      │ │
-│  │  │  Datasets     │   │  │  • Sessions  │  │  • CSV files         │ │
-│  │  │  Queries      │   │  │  • Cache     │  │  • Excel files       │ │
-│  │  │  Visualizations│  │  │  • Rate      │  │  • Parquet files     │ │
-│  │  └───────────────┘   │  │    Limiting  │  │  • JSON files        │ │
-│  └──────────────────────┘  └──────────────┘  └──────────────────────┘ │
+│  ┌──────────────────────┐  ┌──────────────┐  ┌──────────────────────┐   │
+│  │    PostgreSQL        │  │    Redis     │  │   File Storage       │   │
+│  │  ┌───────────────┐   │  │  (Optional)  │  │   (Local/Cloud)      │   │
+│  │  │  Users        │   │  │              │  │                      │   │
+│  │  │  Datasets     │   │  │  • Sessions  │  │  • CSV files         │   │
+│  │  │  Queries      │   │  │  • Cache     │  │  • Excel files       │   │
+│  │  │  Visualizations│  │  │  • Rate      │  │  • Parquet files     │   │
+│  │  └───────────────┘   │  │    Limiting  │  │  • JSON files        │   │
+│  └──────────────────────┘  └──────────────┘  └──────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────┘
                                    │
                                    ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                      External Services                                  │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌────────────────────┐   │
-│  │  Anthropic API   │  │  Tableau Server  │  │  Web Scraping      │   │
-│  │  (Claude AI)     │  │  (Optional)      │  │  (BeautifulSoup)   │   │
-│  └──────────────────┘  └──────────────────┘  └────────────────────┘   │
+│  ┌──────────────────┐  ┌──────────────────┐  ┌────────────────────┐     │
+│  │  Anthropic API   │  │  Tableau Server  │  │  Web Scraping      │     │
+│  │  (Claude AI)     │  │  (Optional)      │  │  (BeautifulSoup)   │     │
+│  └──────────────────┘  └──────────────────┘  └────────────────────┘     │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -84,36 +84,36 @@ InsightForge is a multi-user data analysis platform built with a modern microser
 │                         React Frontend                          │
 ├─────────────────────────────────────────────────────────────────┤
 │  Pages Layer                                                    │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐          │
-│  │  Auth    │ │Dashboard │ │  Upload  │ │  Query   │          │
-│  │  Pages   │ │   Page   │ │   Page   │ │  Builder │          │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘          │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐            │
+│  │  Auth    │ │Dashboard │ │  Upload  │ │  Query   │            │
+│  │  Pages   │ │   Page   │ │   Page   │ │  Builder │            │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘            │
 │       │             │             │             │               │
-├───────┼─────────────┼─────────────┼─────────────┼──────────────┤
+├───────┼─────────────┼─────────────┼─────────────┼───────────────┤
 │  Components Layer                                               │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │ Common: Button, Input, Card, Modal, Loading, Table      │  │
-│  │ Layout: Header, Sidebar, Footer                          │  │
-│  │ Data: FileUploader, DataTable, SchemaViewer             │  │
-│  │ Query: QueryEditor, NLInput, QueryHistory               │  │
-│  │ Viz: ChartContainer, ChartSelector, VizSuggestions      │  │
-│  └──────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ Common: Button, Input, Card, Modal, Loading, Table       │   │
+│  │ Layout: Header, Sidebar, Footer                          │   │
+│  │ Data: FileUploader, DataTable, SchemaViewer              │   │
+│  │ Query: QueryEditor, NLInput, QueryHistory                │   │
+│  │ Viz: ChartContainer, ChartSelector, VizSuggestions       │   │
+│  └──────────────────────────────────────────────────────────┘   │
 ├─────────────────────────────────────────────────────────────────┤
-│  State Management (Zustand/Redux)                              │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │ • Auth State (user, tokens)                              │  │
-│  │ • Dataset State (datasets, current dataset)              │  │
-│  │ • Query State (queries, results)                         │  │
-│  │ • UI State (loading, modals, notifications)              │  │
-│  └──────────────────────────────────────────────────────────┘  │
+│  State Management (Zustand/Redux)                               │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ • Auth State (user, tokens)                              │   │
+│  │ • Dataset State (datasets, current dataset)              │   │
+│  │ • Query State (queries, results)                         │   │
+│  │ • UI State (loading, modals, notifications)              │   │
+│  └──────────────────────────────────────────────────────────┘   │
 ├─────────────────────────────────────────────────────────────────┤
 │  Services/API Layer                                             │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │ API Client (Axios)                                        │  │
-│  │ • Request interceptors (add auth token)                  │  │
-│  │ • Response interceptors (handle errors, refresh token)   │  │
-│  │ • Typed API methods                                      │  │
-│  └──────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ API Client (Axios)                                       │   │
+│  │ • Request interceptors (add auth token)                  │   │
+│  │ • Response interceptors (handle errors, refresh token)   │   │
+│  │ • Typed API methods                                      │   │
+│  └──────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -124,45 +124,45 @@ InsightForge is a multi-user data analysis platform built with a modern microser
 │                      FastAPI Backend                            │
 ├─────────────────────────────────────────────────────────────────┤
 │  API Routes                                                     │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │ /api/auth/*        → Authentication endpoints            │  │
-│  │ /api/datasets/*    → Dataset management                  │  │
-│  │ /api/query/*       → Query execution                     │  │
-│  │ /api/visualize/*   → Visualization generation            │  │
-│  │ /health            → Health checks                       │  │
-│  └──────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ /api/auth/*        → Authentication endpoints            │   │
+│  │ /api/datasets/*    → Dataset management                  │   │
+│  │ /api/query/*       → Query execution                     │   │
+│  │ /api/visualize/*   → Visualization generation            │   │
+│  │ /health            → Health checks                       │   │
+│  └──────────────────────────────────────────────────────────┘   │
 ├─────────────────────────────────────────────────────────────────┤
 │  Middleware Stack                                               │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │ 1. CORS Middleware                                       │  │
-│  │ 2. JWT Authentication                                    │  │
-│  │ 3. Request Validation (Pydantic)                         │  │
-│  │ 4. Error Handling                                        │  │
-│  │ 5. Logging                                               │  │
-│  └──────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ 1. CORS Middleware                                       │   │
+│  │ 2. JWT Authentication                                    │   │
+│  │ 3. Request Validation (Pydantic)                         │   │
+│  │ 4. Error Handling                                        │   │
+│  │ 5. Logging                                               │   │
+│  └──────────────────────────────────────────────────────────┘   │
 ├─────────────────────────────────────────────────────────────────┤
 │  Business Logic Services                                        │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
-│  │ AuthService  │  │ DataService  │  │ QueryEngine  │         │
-│  ├──────────────┤  ├──────────────┤  ├──────────────┤         │
-│  │• hash_pwd    │  │• parse_file  │  │• exec_sql    │         │
-│  │• verify_pwd  │  │• fetch_url   │  │• exec_pandas │         │
-│  │• create_jwt  │  │• scrape_web  │  │• nl_to_query │         │
-│  │• validate    │  │• infer_schema│  │• validate    │         │
-│  └──────────────┘  └──────────────┘  └──────────────┘         │
-│  ┌──────────────┐  ┌──────────────┐                            │
-│  │ LLMService   │  │ VizService   │                            │
-│  ├──────────────┤  ├──────────────┤                            │
-│  │• gen_query   │  │• gen_chart   │                            │
-│  │• suggest_viz │  │• suggest     │                            │
-│  │• insights    │  │• tableau_exp │                            │
-│  └──────────────┘  └──────────────┘                            │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐           │
+│  │ AuthService  │  │ DataService  │  │ QueryEngine  │           │
+│  ├──────────────┤  ├──────────────┤  ├──────────────┤           │
+│  │• hash_pwd    │  │• parse_file  │  │• exec_sql    │           │
+│  │• verify_pwd  │  │• fetch_url   │  │• exec_pandas │           │
+│  │• create_jwt  │  │• scrape_web  │  │• nl_to_query │           │
+│  │• validate    │  │• infer_schema│  │• validate    │           │
+│  └──────────────┘  └──────────────┘  └──────────────┘           │
+│  ┌──────────────┐  ┌──────────────┐                             │
+│  │ LLMService   │  │ VizService   │                             │
+│  ├──────────────┤  ├──────────────┤                             │
+│  │• gen_query   │  │• gen_chart   │                             │
+│  │• suggest_viz │  │• suggest     │                             │
+│  │• insights    │  │• tableau_exp │                             │
+│  └──────────────┘  └──────────────┘                             │
 ├─────────────────────────────────────────────────────────────────┤
 │  Data Access Layer (SQLAlchemy ORM)                             │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │ Models: User, Dataset, Query, Visualization              │  │
-│  │ Async Sessions, Connection Pooling                       │  │
-│  └──────────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │ Models: User, Dataset, Query, Visualization              │   │
+│  │ Async Sessions, Connection Pooling                       │   │
+│  └──────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
