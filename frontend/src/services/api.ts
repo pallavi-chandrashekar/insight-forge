@@ -183,7 +183,9 @@ export const visualizationAPI = {
   },
 
   suggest: async (dataset_id: string) => {
-    const { data } = await api.post<VizSuggestion[]>('/visualize/suggest', { dataset_id })
+    const { data } = await api.post<VizSuggestion[]>('/visualize/suggest', null, {
+      params: { dataset_id }
+    })
     return data
   },
 
