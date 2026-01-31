@@ -24,8 +24,15 @@ class VisualizationService:
         y_col = config.get("y_column")
         color_col = config.get("color_column")
         title = config.get("title", "")
-        x_label = config.get("x_label", x_col)
-        y_label = config.get("y_label", y_col)
+        x_label = config.get("x_label") or x_col
+        y_label = config.get("y_label") or y_col
+
+        # Build labels dict, excluding None values to prevent Plotly errors
+        labels = {}
+        if x_col and x_label:
+            labels[x_col] = x_label
+        if y_col and y_label:
+            labels[y_col] = y_label
 
         if chart_type == ChartType.BAR:
             fig = px.bar(
@@ -34,7 +41,7 @@ class VisualizationService:
                 y=y_col,
                 color=color_col,
                 title=title,
-                labels={x_col: x_label, y_col: y_label},
+                labels=labels if labels else None,
             )
         elif chart_type == ChartType.LINE:
             fig = px.line(
@@ -43,7 +50,7 @@ class VisualizationService:
                 y=y_col,
                 color=color_col,
                 title=title,
-                labels={x_col: x_label, y_col: y_label},
+                labels=labels if labels else None,
             )
         elif chart_type == ChartType.SCATTER:
             size_col = config.get("size_column")
@@ -54,7 +61,7 @@ class VisualizationService:
                 color=color_col,
                 size=size_col,
                 title=title,
-                labels={x_col: x_label, y_col: y_label},
+                labels=labels if labels else None,
             )
         elif chart_type == ChartType.PIE:
             fig = px.pie(
@@ -64,12 +71,15 @@ class VisualizationService:
                 title=title,
             )
         elif chart_type == ChartType.HISTOGRAM:
+            histogram_labels = {}
+            if x_col and x_label:
+                histogram_labels[x_col] = x_label
             fig = px.histogram(
                 df,
                 x=x_col,
                 color=color_col,
                 title=title,
-                labels={x_col: x_label},
+                labels=histogram_labels if histogram_labels else None,
             )
         elif chart_type == ChartType.HEATMAP:
             # For heatmap, expect a correlation matrix or pivot table
@@ -101,7 +111,7 @@ class VisualizationService:
                 y=y_col,
                 color=color_col,
                 title=title,
-                labels={x_col: x_label, y_col: y_label},
+                labels=labels if labels else None,
             )
         elif chart_type == ChartType.AREA:
             fig = px.area(
@@ -110,7 +120,7 @@ class VisualizationService:
                 y=y_col,
                 color=color_col,
                 title=title,
-                labels={x_col: x_label, y_col: y_label},
+                labels=labels if labels else None,
             )
         else:
             # Default to table
