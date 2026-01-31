@@ -1,6 +1,8 @@
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
+import json
 from typing import Any, Optional
 from uuid import UUID
 from sqlalchemy import select
@@ -129,7 +131,8 @@ class VisualizationService:
                 cells=dict(values=[df[col] for col in df.columns])
             )])
 
-        return fig.to_dict()
+        # Convert to JSON-safe format (converts numpy arrays to lists)
+        return json.loads(pio.to_json(fig))
 
     @staticmethod
     async def save_visualization(
