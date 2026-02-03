@@ -242,8 +242,8 @@ class TestPandasOperations:
 
         assert len(result) == 3
         assert len(result.columns) == 3
-        assert all(result.index[i] <= result.index[i+1] for i in range(len(result)-1)
-                  or result["salary"].iloc[i] >= result["salary"].iloc[i+1]
+        # Check that salary is sorted in descending order
+        assert all(result["salary"].iloc[i] >= result["salary"].iloc[i+1]
                   for i in range(len(result)-1))
         assert execution_time > 0
 

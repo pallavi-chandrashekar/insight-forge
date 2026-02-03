@@ -1,11 +1,11 @@
 from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey, Enum
-from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
 import enum
 
 from app.core.database import Base
+from app.models.types import UUID, JSONType
 
 
 class SourceType(str, enum.Enum):
@@ -17,8 +17,8 @@ class SourceType(str, enum.Enum):
 class Dataset(Base):
     __tablename__ = "datasets"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    id = Column(UUID, primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
@@ -32,7 +32,7 @@ class Dataset(Base):
     file_type = Column(String(50), nullable=True)  # csv, json, excel, parquet
 
     # Data info
-    schema = Column(JSONB, nullable=True)  # Column names, types, sample values
+    schema = Column(JSONType, nullable=True)  # Column names, types, sample values
     row_count = Column(Integer, nullable=True)
     column_count = Column(Integer, nullable=True)
 

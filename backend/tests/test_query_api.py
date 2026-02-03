@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import uuid4
 
-from app.models.dataset import Dataset, DatasetFormat
+from app.models.dataset import Dataset, SourceType
 from app.models.user import User
 
 
@@ -29,8 +29,9 @@ class TestQueryExecutionAPI:
         dataset = Dataset(
             user_id=test_user.id,
             name="Test Products",
-            filename="test_products.csv",
-            format=DatasetFormat.CSV,
+            original_filename="test_products.csv",
+            source_type=SourceType.FILE,
+            file_type="csv",
             file_path="/tmp/test_products.csv",
             row_count=len(df),
             column_count=len(df.columns),
@@ -197,8 +198,9 @@ class TestNaturalLanguageQueryAPI:
         dataset = Dataset(
             user_id=test_user.id,
             name="Sales Data",
-            filename="sales.csv",
-            format=DatasetFormat.CSV,
+            original_filename="sales.csv",
+            source_type=SourceType.FILE,
+            file_type="csv",
             file_path="/tmp/sales.csv",
             row_count=len(df),
             column_count=len(df.columns),
@@ -273,8 +275,9 @@ class TestQueryHistoryAPI:
         dataset = Dataset(
             user_id=test_user.id,
             name="Test Dataset",
-            filename="test.csv",
-            format=DatasetFormat.CSV,
+            original_filename="test.csv",
+            source_type=SourceType.FILE,
+            file_type="csv",
             file_path="/tmp/test.csv",
             row_count=3,
             column_count=2,

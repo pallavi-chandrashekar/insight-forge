@@ -14,10 +14,10 @@ from app.core.config import settings
 from app.models.user import User
 from app.core.security import get_password_hash
 
-# Test database URL
+# Test database URL - use SQLite for testing
 TEST_DATABASE_URL = os.getenv(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://postgres:postgres@localhost:5432/insightforge_test"
+    "sqlite+aiosqlite:///:memory:"  # In-memory SQLite database
 )
 
 # Create test engine
@@ -25,6 +25,7 @@ test_engine = create_async_engine(
     TEST_DATABASE_URL,
     poolclass=NullPool,
     echo=False,
+    connect_args={"check_same_thread": False} if "sqlite" in TEST_DATABASE_URL else {},
 )
 
 # Create test session factory
@@ -76,7 +77,7 @@ async def test_user(db_session: AsyncSession) -> User:
     """Create a test user"""
     user = User(
         email="test@example.com",
-        username="testuser",
+        full_name="Test User",
         hashed_password=get_password_hash("testpassword123"),
         is_active=True,
     )

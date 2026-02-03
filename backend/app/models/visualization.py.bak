@@ -23,10 +23,10 @@ class ChartType(str, enum.Enum):
 class Visualization(Base):
     __tablename__ = "visualizations"
 
-    id = Column(UUID, primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    dataset_id = Column(UUID, ForeignKey("datasets.id", ondelete="CASCADE"), nullable=False)
-    query_id = Column(UUID, ForeignKey("queries.id", ondelete="SET NULL"), nullable=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    dataset_id = Column(UUID(as_uuid=True), ForeignKey("datasets.id", ondelete="CASCADE"), nullable=False)
+    query_id = Column(UUID(as_uuid=True), ForeignKey("queries.id", ondelete="SET NULL"), nullable=True)
 
     name = Column(String(255), nullable=True)
     description = Column(Text, nullable=True)

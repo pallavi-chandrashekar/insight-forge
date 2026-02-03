@@ -12,6 +12,11 @@ from app.services.auth_service import AuthService
 security = HTTPBearer(auto_error=False)
 
 
+def get_password_hash(password: str) -> str:
+    """Hash a password - wrapper for AuthService.hash_password"""
+    return AuthService.hash_password(password)
+
+
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     db: AsyncSession = Depends(get_db),

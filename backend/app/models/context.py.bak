@@ -35,11 +35,11 @@ class Context(Base):
     __tablename__ = "contexts"
 
     # Primary Key
-    id = Column(UUID, primary_key=True, default=uuid.uuid4)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # User ownership
     user_id = Column(
-        UUID,
+        UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True
@@ -149,15 +149,15 @@ class QueryContext(Base):
     """
     __tablename__ = "query_contexts"
 
-    id = Column(UUID, primary_key=True, default=uuid.uuid4)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     query_id = Column(
-        UUID,
+        UUID(as_uuid=True),
         ForeignKey("queries.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
     context_id = Column(
-        UUID,
+        UUID(as_uuid=True),
         ForeignKey("contexts.id", ondelete="CASCADE"),
         nullable=False,
         index=True
