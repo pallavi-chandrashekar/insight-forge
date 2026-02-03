@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Upload, Database, Search, BarChart3 } from 'lucide-react'
+import { LayoutDashboard, Upload, Database, Search, BarChart3, FileText } from 'lucide-react'
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/upload', icon: Upload, label: 'Upload Data' },
+  { to: '/contexts', icon: FileText, label: 'Contexts' },
   { to: '/query', icon: Search, label: 'Query' },
   { to: '/visualize', icon: BarChart3, label: 'Visualize' },
 ]

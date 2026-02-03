@@ -8,6 +8,9 @@ import Upload from './pages/Upload'
 import Dataset from './pages/Dataset'
 import Query from './pages/Query'
 import Visualize from './pages/Visualize'
+import Contexts from './pages/Contexts'
+import ContextDetail from './pages/ContextDetail'
+import ContextCreate from './pages/ContextCreate'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore()
@@ -50,6 +53,9 @@ function App() {
           <Route path="datasets/:id" element={<Dataset />} />
           <Route path="query" element={<Query />} />
           <Route path="visualize" element={<Visualize />} />
+          <Route path="contexts" element={<Contexts />} />
+          <Route path="contexts/new" element={<ContextCreate />} />
+          <Route path="contexts/:id" element={<ContextDetail />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -170,3 +170,155 @@ Generate key insights about this data."""
             samples = col.get("sample_values", [])
             lines.append(f"- {name} ({dtype}): sample values = {samples}")
         return "\n".join(lines)
+
+    async def analyze_multi_dataset_query(
+        self,
+        question: str,
+        context: dict[str, Any]
+    ) -> dict[str, Any]:
+        """
+        Analyze a natural language question to determine which datasets,
+        metrics, and filters are needed.
+
+        Args:
+            question: Natural language question
+            context: Parsed context dictionary
+
+        Returns:
+            Analysis with required datasets, metrics, filters
+        """
+        system_prompt = """You are a data analysis expert. Analyze the user's question and determine:
+1. Which datasets are needed
+2. Which metrics (if any) should be calculated
+3. Which filters (if any) should be applied
+4. What columns to select
+
+Return a JSON object with:
+{
+  "required_datasets": ["dataset_id1", "dataset_id2"],
+  "required_metrics": ["metric_id1"],
+  "required_filters": ["filter_id1"],
+  "select_columns": ["col1", "col2"],
+  "reasoning": "explanation"
+}
+
+Only return valid JSON, no explanation outside the object."""
+
+        # Format context info
+        datasets_info = []
+        for ds in context.get('datasets', []):
+            ds_info = f"- {ds['id']}: {ds['name']}"
+            if ds.get('description'):
+                ds_info += f" - {ds['description']}"
+            datasets_info.append(ds_info)
+
+        metrics_info = []
+        for metric in context.get('metrics', []):
+            metrics_info.append(f"- {metric['id']}: {metric['name']} = {metric['expression']}")
+
+        filters_info = []
+        for filter_def in context.get('filters', []):
+            filters_info.append(f"- {filter_def['id']}: {filter_def['name']}")
+
+        user_prompt = f"""Context information:
+
+Datasets:
+{chr(10).join(datasets_info)}
+
+Metrics:
+{chr(10).join(metrics_info) if metrics_info else "None"}
+
+Filters:
+{chr(10).join(filters_info) if filters_info else "None"}
+
+User question: {question}
+
+Analyze what's needed to answer this question."""
+
+        response = await self._call_claude(system_prompt, user_prompt)
+        response = response.strip()
+        if response.startswith("```json"):
+            response = response[7:]
+        if response.startswith("```"):
+            response = response[3:]
+        if response.endswith("```"):
+            response = response[:-3]
+
+        return json.loads(response.strip())
+
+    async def generate_sql_with_context(
+        self,
+        question: str,
+        schema: dict[str, Any],
+        context: dict[str, Any],
+        dataset_id: str
+    ) -> str:
+        """
+        Generate SQL query using context metadata.
+
+        Args:
+            question: Natural language question
+            schema: Dataset schema
+            context: Context definition
+            dataset_id: Target dataset ID
+
+        Returns:
+            Generated SQL query
+        """
+        system_prompt = """You are a SQL expert with access to rich dataset metadata.
+Generate SQL queries based on user questions, using the provided context for guidance.
+
+IMPORTANT RULES:
+1. Only return the SQL query, nothing else
+2. Use column business names and descriptions to understand intent
+3. Apply pre-defined metrics when relevant
+4. Use standard SQL syntax compatible with SQLite
+5. Handle NULL values appropriately
+6. Only use SELECT statements
+7. The table name is 'df'"""
+
+        # Find dataset in context
+        dataset_info = None
+        for ds in context.get('datasets', []):
+            if ds['id'] == dataset_id:
+                dataset_info = ds
+                break
+
+        # Format enhanced schema with business metadata
+        schema_lines = []
+        if dataset_info and dataset_info.get('columns'):
+            for col in dataset_info['columns']:
+                line = f"- {col['name']} ({col.get('data_type', 'unknown')})"
+                if col.get('business_name'):
+                    line += f" [Business name: {col['business_name']}]"
+                if col.get('description'):
+                    line += f" - {col['description']}"
+                schema_lines.append(line)
+        else:
+            schema_lines = [self._format_schema(schema)]
+
+        # Include relevant metrics
+        metrics_lines = []
+        for metric in context.get('metrics', []):
+            if not metric.get('datasets') or dataset_id in metric.get('datasets', []):
+                metrics_lines.append(f"- {metric['name']}: {metric['expression']}")
+
+        user_prompt = f"""Schema:
+{chr(10).join(schema_lines)}
+
+Available metrics:
+{chr(10).join(metrics_lines) if metrics_lines else "None"}
+
+User question: {question}
+
+Generate a SQL query to answer this question."""
+
+        response = await self._call_claude(system_prompt, user_prompt)
+        query = response.strip()
+        if query.startswith("```sql"):
+            query = query[6:]
+        if query.startswith("```"):
+            query = query[3:]
+        if query.endswith("```"):
+            query = query[:-3]
+        return query.strip()

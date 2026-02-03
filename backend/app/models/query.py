@@ -20,6 +20,7 @@ class Query(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     dataset_id = Column(UUID(as_uuid=True), ForeignKey("datasets.id", ondelete="CASCADE"), nullable=False)
+    context_id = Column(UUID(as_uuid=True), ForeignKey("contexts.id", ondelete="SET NULL"), nullable=True)
 
     name = Column(String(255), nullable=True)
     query_type = Column(Enum(QueryType), nullable=False)
@@ -44,6 +45,7 @@ class Query(Base):
     user = relationship("User", back_populates="queries")
     dataset = relationship("Dataset", back_populates="queries")
     visualizations = relationship("Visualization", back_populates="query")
+    query_contexts = relationship("QueryContext", back_populates="query", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Query {self.id}>"

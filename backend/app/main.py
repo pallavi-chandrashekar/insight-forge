@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import init_db
-from app.api.routes import auth, datasets, query, visualize, health
+from app.api.routes import auth, datasets, query, visualize, health, contexts
 
 
 @asynccontextmanager
@@ -39,6 +39,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(datasets.router, prefix="/api/datasets", tags=["Datasets"])
 app.include_router(query.router, prefix="/api/query", tags=["Query"])
 app.include_router(visualize.router, prefix="/api/visualize", tags=["Visualization"])
+app.include_router(contexts.router, prefix="/api", tags=["Contexts"])
 
 
 @app.get("/")

@@ -28,6 +28,7 @@ class User(Base):
     datasets = relationship("Dataset", back_populates="user", cascade="all, delete-orphan")
     queries = relationship("Query", back_populates="user", cascade="all, delete-orphan")
     visualizations = relationship("Visualization", back_populates="user", cascade="all, delete-orphan")
+    contexts = relationship("Context", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User {self.email}>"
