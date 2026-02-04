@@ -9,12 +9,22 @@ class Base(DeclarativeBase):
     pass
 
 
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    pool_size=settings.DATABASE_POOL_SIZE,
-    max_overflow=settings.DATABASE_MAX_OVERFLOW,
-    echo=settings.DEBUG,
-)
+# Create engine with appropriate settings for database type
+if "sqlite" in settings.DATABASE_URL:
+    # SQLite doesn't support pool_size and max_overflow
+    engine = create_async_engine(
+        settings.DATABASE_URL,
+        echo=settings.DEBUG,
+        connect_args={"check_same_thread": False}
+    )
+else:
+    # PostgreSQL with connection pooling
+    engine = create_async_engine(
+        settings.DATABASE_URL,
+        pool_size=settings.DATABASE_POOL_SIZE,
+        max_overflow=settings.DATABASE_MAX_OVERFLOW,
+        echo=settings.DEBUG,
+    )
 
 async_session_maker = async_sessionmaker(
     engine,

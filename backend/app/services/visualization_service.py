@@ -28,14 +28,50 @@ class VisualizationService:
         y_col = config.get("y_column")
         color_col = config.get("color_column")
         title = config.get("title", "")
-        x_label = config.get("x_label") or x_col
-        y_label = config.get("y_label") or y_col
+        x_label = config.get("x_label")
+        y_label = config.get("y_label")
+        aggregation = config.get("aggregation")
+
+        # Handle list of columns - convert single-element lists to strings
+        if isinstance(x_col, list) and len(x_col) == 1:
+            x_col = x_col[0]
+        if isinstance(y_col, list):
+            if len(y_col) == 1:
+                y_col = y_col[0]
+            elif len(y_col) > 1 and aggregation and x_col:
+                # Multi-column aggregation for bar/line/area charts
+                agg_func = aggregation.lower()
+                try:
+                    # Group by x_col and aggregate all y columns
+                    df_agg = df.groupby(x_col)[y_col].agg(agg_func).reset_index()
+
+                    # Melt to long format for Plotly (creates 'variable' and 'value' columns)
+                    df = df_agg.melt(
+                        id_vars=[x_col],
+                        value_vars=y_col,
+                        var_name='Series',
+                        value_name='Value'
+                    )
+
+                    # Update config for melted dataframe
+                    y_col = 'Value'
+                    color_col = 'Series'  # Use Series as color to separate the lines/bars
+                    y_label = y_label or 'Value'
+
+                except Exception as e:
+                    raise ValueError(f"Aggregation failed: {str(e)}")
+
+        # Set default labels if not provided
+        if not x_label:
+            x_label = x_col if isinstance(x_col, str) else None
+        if not y_label:
+            y_label = y_col if isinstance(y_col, str) else None
 
         # Build labels dict, excluding None values to prevent Plotly errors
         labels = {}
         if x_col and x_label:
             labels[x_col] = x_label
-        if y_col and y_label:
+        if y_col and y_label and isinstance(y_col, str):
             labels[y_col] = y_label
 
         if chart_type == ChartType.BAR:

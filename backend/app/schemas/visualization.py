@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Any
+from typing import Optional, Any, Union
 from datetime import datetime
 from uuid import UUID
 from enum import Enum
@@ -18,8 +18,8 @@ class ChartType(str, Enum):
 
 
 class VizConfig(BaseModel):
-    x_column: Optional[str] = None
-    y_column: Optional[str] = None
+    x_column: Optional[Union[str, list[str]]] = None
+    y_column: Optional[Union[str, list[str]]] = None
     color_column: Optional[str] = None
     size_column: Optional[str] = None
     aggregation: Optional[str] = None  # sum, mean, count, etc.
