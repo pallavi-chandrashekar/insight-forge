@@ -85,6 +85,33 @@ metrics:
 - Advanced chart types (heatmap, box plots)
 - Tableau integration (optional)
 
+### 🚧 4. Natural Language Visualization Generation
+**File:** `natural-language-visualization.md`
+**Status:** ✅ DOCUMENTED (Ready for Implementation)
+
+**NEW FEATURE:** Generate visualizations from plain text descriptions
+
+**Capabilities:**
+- Parse natural language to chart configuration
+- Automatic chart type selection
+- Aggregation function detection
+- Column validation with suggestions
+- Real-time visualization generation
+- "Understanding" feedback to users
+
+**Example:**
+```
+User types: "show average screen time by age group"
+System generates: Bar chart with age_group on x-axis,
+                  total_screen_time on y-axis, mean aggregation
+```
+
+**Key Benefits:**
+- 10x faster than manual configuration
+- Lowers barrier for non-technical users
+- Natural, conversational interface
+- Immediate feedback on interpretation
+
 ---
 
 ## Implementation Order
@@ -110,6 +137,7 @@ metrics:
 
 4. **Week 8: Advanced Visualization**
    - AI suggestion engine
+   - Natural language visualization generation
    - Context-aware viz recommendations
    - Tableau integration
    - Testing and polish
@@ -141,8 +169,11 @@ Phase 2:
 - [ ] Multi-dataset queries execute correctly
 - [ ] Natural language queries work across datasets
 - [ ] AI suggests appropriate visualizations (>85% accuracy)
+- [ ] Natural language visualization generation works (>80% parse success)
+- [ ] NL viz response time <5 seconds end-to-end
 - [ ] Query execution time <2s for 2-3 dataset joins
 - [ ] Context-aware query adoption rate >40%
+- [ ] NL visualization adoption rate >20% within first week
 - [ ] All Phase 2 features have >90% test coverage
 
 ---
