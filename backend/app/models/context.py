@@ -101,6 +101,7 @@ class Context(Base):
 
     # Relationships
     user = relationship("User", back_populates="contexts")
+    datasets_rel = relationship("Dataset", back_populates="context")
     query_contexts = relationship(
         "QueryContext",
         back_populates="context",

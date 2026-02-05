@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios'
-import type { User, Token, Dataset, DatasetPreview, Query, QueryHistoryItem, Visualization, VizSuggestion } from '../types'
+import type { User, Token, Dataset, DatasetPreview, Query, QueryHistoryItem, Visualization, VizSuggestion, NLVizResponse } from '../types'
 
 const api = axios.create({
   baseURL: '/api',
@@ -203,6 +203,15 @@ export const visualizationAPI = {
 
   delete: async (id: string) => {
     await api.delete(`/visualize/${id}`)
+  },
+
+  fromNaturalLanguage: async (dataset_id: string, description: string, name?: string) => {
+    const { data } = await api.post<NLVizResponse>('/visualize/from-natural-language', {
+      dataset_id,
+      description,
+      name,
+    })
+    return data
   },
 }
 

@@ -121,3 +121,14 @@ export interface VizSuggestion {
   config: VizConfig
   reasoning: string
 }
+
+export interface NLVizResponse {
+  visualization: Visualization
+  parsed_intent: {
+    chart_type: ChartType
+    title: string
+    config: VizConfig
+    reasoning: string
+  }
+  suggestions?: string[]
+}

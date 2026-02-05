@@ -62,3 +62,17 @@ class VizSuggestion(BaseModel):
     confidence: float = Field(ge=0, le=1)
     config: VizConfig
     reasoning: str
+
+
+class NLVizRequest(BaseModel):
+    dataset_id: UUID
+    description: str = Field(..., min_length=3, max_length=500)
+    name: Optional[str] = None
+
+
+class NLVizResponse(BaseModel):
+    visualization: VizResponse
+    parsed_intent: dict[str, Any]
+    suggestions: Optional[list[str]] = None
+    context_used: bool = False
+    context_name: Optional[str] = None

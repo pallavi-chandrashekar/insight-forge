@@ -19,6 +19,7 @@ class Dataset(Base):
 
     id = Column(UUID, primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    context_id = Column(UUID, ForeignKey("contexts.id", ondelete="SET NULL"), nullable=True)
 
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
@@ -41,6 +42,7 @@ class Dataset(Base):
 
     # Relationships
     user = relationship("User", back_populates="datasets")
+    context = relationship("Context", back_populates="datasets_rel")
     queries = relationship("Query", back_populates="dataset", cascade="all, delete-orphan")
     visualizations = relationship("Visualization", back_populates="dataset", cascade="all, delete-orphan")
 

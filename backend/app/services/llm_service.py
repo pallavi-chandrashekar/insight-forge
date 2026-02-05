@@ -1,5 +1,5 @@
 import json
-from typing import Any
+from typing import Any, Optional
 
 from anthropic import AsyncAnthropic
 
@@ -133,6 +133,129 @@ Suggest appropriate visualizations for this data."""
 
         return json.loads(response.strip())
 
+    async def generate_visualization_from_nl(
+        self,
+        description: str,
+        schema: dict[str, Any],
+        sample_data: list[dict[str, Any]],
+        context_metadata: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
+        """
+        Generate a complete visualization configuration from natural language.
+
+        Args:
+            description: User's natural language description
+            schema: Dataset schema with column info
+            sample_data: Sample rows for context
+
+        Returns:
+            {
+                "chart_type": "bar",
+                "title": "Average Screen Time by Age Group",
+                "config": {
+                    "x_column": "age_group",
+                    "y_column": "screen_time",
+                    "aggregation": "mean"
+                },
+                "reasoning": "User requested average, which maps to mean aggregation..."
+            }
+
+        Raises:
+            ValueError: If description cannot be parsed
+        """
+        context_section = ""
+        if context_metadata:
+            context_section = self._format_context_for_prompt(context_metadata)
+
+        system_prompt = f"""You are a data visualization expert. Parse natural language descriptions into visualization configurations.
+{f'''
+BUSINESS CONTEXT (use this to improve accuracy):
+{context_section}
+
+When business context is provided:
+- Map business terms to technical column names using glossary and column metadata
+- Use pre-defined metrics when mentioned (e.g., if user says "avg_screen_time", use that metric)
+- Apply filters by name if referenced
+- Prefer business names over technical column names in titles
+''' if context_section else ''}
+RULES:
+1. Only use columns from the provided schema
+2. Choose chart types based on data types and user intent:
+   - bar: categorical x-axis, numeric y-axis, for comparisons
+   - line: time-series or sequential data, show trends
+   - scatter: two numeric columns, explore relationships
+   - pie: categorical data, show proportions (only when explicitly requested)
+   - histogram: single numeric column, show distribution
+   - box: numeric data grouped by categories, statistical spread
+   - area: cumulative trends over time
+   - heatmap: correlations or 2D patterns
+
+3. Map common aggregation terms:
+   - "average" → "mean"
+   - "total" / "sum" → "sum"
+   - "count" / "number of" → "count"
+   - "maximum" / "highest" → "max"
+   - "minimum" / "lowest" → "min"
+
+4. If description is ambiguous, make reasonable assumptions based on data types
+
+5. Return ONLY valid JSON, no markdown code blocks
+
+OUTPUT FORMAT:
+{{
+  "chart_type": "bar" | "line" | "scatter" | "pie" | "histogram" | "heatmap" | "box" | "area",
+  "title": "Descriptive Title",
+  "config": {{
+    "x_column": "column_name",
+    "y_column": "column_name" | ["col1", "col2"],
+    "color_column": "column_name",
+    "aggregation": "mean" | "sum" | "count" | "min" | "max"
+  }},
+  "reasoning": "Brief explanation of chart type choice"
+}}
+
+ERROR FORMAT (if cannot parse):
+{{
+  "error": "Explanation of what's unclear",
+  "suggestions": ["Suggestion 1", "Suggestion 2"]
+}}"""
+
+        schema_str = self._format_schema(schema)
+        sample_str = json.dumps(sample_data[:3], default=str)
+
+        user_prompt = f"""Schema:
+{schema_str}
+
+Sample data:
+{sample_str}
+
+User request: "{description}"
+
+Parse this into a visualization configuration."""
+
+        response = await self._call_claude(system_prompt, user_prompt)
+
+        # Clean markdown
+        response = response.strip()
+        if response.startswith("```json"):
+            response = response[7:]
+        if response.startswith("```"):
+            response = response[3:]
+        if response.endswith("```"):
+            response = response[:-3]
+
+        parsed = json.loads(response.strip())
+
+        # Check for error response from LLM
+        if "error" in parsed:
+            raise ValueError(parsed["error"])
+
+        # Validate required fields
+        if "chart_type" not in parsed or "config" not in parsed:
+            raise ValueError("Could not determine chart type and columns from description")
+
+        return parsed
+
     async def generate_insights(self, stats: dict[str, Any]) -> list[str]:
         """Generate insights about the data"""
         system_prompt = """You are a data analyst. Generate key insights about the data based on the provided statistics.
@@ -170,6 +293,78 @@ Generate key insights about this data."""
             samples = col.get("sample_values", [])
             lines.append(f"- {name} ({dtype}): sample values = {samples}")
         return "\n".join(lines)
+
+    def _format_context_for_prompt(self, context_metadata: dict[str, Any]) -> str:
+        """
+        Format context metadata into readable sections for LLM.
+
+        Args:
+            context_metadata: Dictionary with business context
+
+        Returns:
+            Formatted string with context sections
+        """
+        if not context_metadata:
+            return ""
+
+        sections = []
+
+        # Dataset description
+        if context_metadata.get("description"):
+            sections.append(f"Dataset: {context_metadata['name']}")
+            sections.append(f"Description: {context_metadata['description']}\n")
+
+        # Column business names and descriptions
+        columns = context_metadata.get("columns", [])
+        if columns:
+            sections.append("COLUMN METADATA:")
+            for col in columns:
+                col_line = f"- {col['name']}"
+                if col.get("business_name"):
+                    col_line += f" (Business name: {col['business_name']})"
+                if col.get("description"):
+                    col_line += f": {col['description']}"
+                sections.append(col_line)
+            sections.append("")
+
+        # Pre-defined metrics
+        metrics = context_metadata.get("metrics", [])
+        if metrics:
+            sections.append("PRE-DEFINED METRICS:")
+            for metric in metrics:
+                metric_line = f"- {metric.get('name', metric.get('id'))}"
+                if metric.get("expression"):
+                    metric_line += f" = {metric['expression']}"
+                if metric.get("description"):
+                    metric_line += f" ({metric['description']})"
+                sections.append(metric_line)
+            sections.append("")
+
+        # Glossary terms
+        glossary = context_metadata.get("glossary", [])
+        if glossary:
+            sections.append("GLOSSARY TERMS:")
+            for term in glossary:
+                term_line = f"- {term.get('term')}"
+                if term.get("definition"):
+                    term_line += f": {term['definition']}"
+                if term.get("related_columns"):
+                    term_line += f" [Related columns: {', '.join(term['related_columns'])}]"
+                sections.append(term_line)
+            sections.append("")
+
+        # Available filters
+        filters = context_metadata.get("filters", [])
+        if filters:
+            sections.append("AVAILABLE FILTERS:")
+            for filter_def in filters:
+                filter_line = f"- {filter_def.get('name', filter_def.get('id'))}"
+                if filter_def.get("condition"):
+                    filter_line += f": {filter_def['condition']}"
+                sections.append(filter_line)
+            sections.append("")
+
+        return "\n".join(sections)
 
     async def analyze_multi_dataset_query(
         self,

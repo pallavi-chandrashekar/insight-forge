@@ -5,7 +5,7 @@ import Plot from 'react-plotly.js'
 import {
   BarChart3, Sparkles, Wand2, LineChart, ScatterChart,
   PieChart, BarChart, TrendingUp, Grid, Box, Activity,
-  Download, Save, Trash2, Eye
+  Download, Save, Trash2, Eye, MessageSquare
 } from 'lucide-react'
 
 export default function Visualize() {
@@ -16,7 +16,7 @@ export default function Visualize() {
   const [chartData, setChartData] = useState<any>(null)
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
-  const [mode, setMode] = useState<'ai' | 'manual'>('manual')
+  const [mode, setMode] = useState<'ai' | 'manual' | 'nl'>('manual')
 
   // Manual chart creation state
   const [chartType, setChartType] = useState<ChartType>('bar')
@@ -28,6 +28,10 @@ export default function Visualize() {
   })
   const [datasetColumns, setDatasetColumns] = useState<string[]>([])
   const [savedChartId, setSavedChartId] = useState<string | null>(null)
+
+  // Natural language visualization state
+  const [nlDescription, setNlDescription] = useState('')
+  const [nlParsedIntent, setNlParsedIntent] = useState<any>(null)
 
   // Chart type metadata
   const chartTypes = [
@@ -73,6 +77,8 @@ export default function Visualize() {
     loadDatasetColumns(datasetId)
     setChartData(null)
     setSuggestions([])
+    setNlDescription('')
+    setNlParsedIntent(null)
   }
 
   const handleGetSuggestions = async () => {
@@ -172,6 +178,39 @@ export default function Visualize() {
     }
   }
 
+  const handleNLGenerate = async () => {
+    if (!selectedDataset || !nlDescription.trim()) return
+
+    setIsGenerating(true)
+    setChartData(null)
+    setSavedChartId(null)
+    setNlParsedIntent(null)
+
+    try {
+      const response = await visualizationAPI.fromNaturalLanguage(
+        selectedDataset,
+        nlDescription
+      )
+
+      setChartData(response.visualization.chart_data)
+      setSavedChartId(response.visualization.id)
+      setNlParsedIntent(response.parsed_intent)
+
+    } catch (error: any) {
+      console.error('Error generating from NL:', error)
+
+      const errorDetail = error.response?.data?.detail
+
+      if (typeof errorDetail === 'object' && errorDetail.suggestions) {
+        alert(`${errorDetail.error}\n\nSuggestions:\n${errorDetail.suggestions.join('\n')}`)
+      } else {
+        alert(errorDetail || 'Failed to generate visualization')
+      }
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div>
@@ -208,6 +247,19 @@ export default function Visualize() {
             <div className="flex items-center space-x-2">
               <Sparkles className="w-4 h-4" />
               <span>AI Suggestions</span>
+            </div>
+          </button>
+          <button
+            onClick={() => setMode('nl')}
+            className={`pb-2 px-4 font-medium transition-colors ${
+              mode === 'nl'
+                ? 'text-primary-600 border-b-2 border-primary-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <div className="flex items-center space-x-2">
+              <MessageSquare className="w-4 h-4" />
+              <span>Natural Language</span>
             </div>
           </button>
         </div>
@@ -395,6 +447,56 @@ export default function Visualize() {
               </div>
             </div>
           )}
+
+          {mode === 'nl' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Describe what you want to visualize
+                </label>
+                <textarea
+                  value={nlDescription}
+                  onChange={(e) => setNlDescription(e.target.value)}
+                  placeholder="E.g., show average screen time by age group, create pie chart of device types, compare social media hours across age groups"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 min-h-[100px] focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  rows={3}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Be specific about columns and chart type for best results
+                </p>
+              </div>
+
+              {nlParsedIntent && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <h4 className="font-semibold text-blue-900 mb-1">Understanding:</h4>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• Chart: {nlParsedIntent.chart_type}</li>
+                    <li>• X-axis: {nlParsedIntent.config.x_column}</li>
+                    {nlParsedIntent.config.y_column && (
+                      <li>• Y-axis: {Array.isArray(nlParsedIntent.config.y_column) ? nlParsedIntent.config.y_column.join(', ') : nlParsedIntent.config.y_column}</li>
+                    )}
+                    {nlParsedIntent.config.aggregation && (
+                      <li>• Calculation: {nlParsedIntent.config.aggregation}</li>
+                    )}
+                  </ul>
+                  <p className="text-xs text-gray-600 mt-2 italic">
+                    {nlParsedIntent.reasoning}
+                  </p>
+                </div>
+              )}
+
+              <button
+                onClick={handleNLGenerate}
+                disabled={isGenerating || !selectedDataset || !nlDescription.trim()}
+                className="btn btn-primary flex items-center space-x-2 px-6 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition-shadow disabled:shadow-none"
+              >
+                <Sparkles className="w-6 h-6" />
+                <span>
+                  {isGenerating ? 'Generating...' : 'Generate Visualization'}
+                </span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -448,7 +550,12 @@ export default function Visualize() {
           <div className="flex items-start justify-between mb-4">
             <div>
               <h2 className="text-xl font-bold text-gray-900">
-                {mode === 'ai' ? selectedSuggestion?.title : (chartConfig.title || `${chartType.charAt(0).toUpperCase() + chartType.slice(1)} Chart`)}
+                {mode === 'ai'
+                  ? selectedSuggestion?.title
+                  : mode === 'nl'
+                    ? (nlParsedIntent?.title || `${nlParsedIntent?.chart_type?.charAt(0).toUpperCase() + nlParsedIntent?.chart_type?.slice(1)} Chart`)
+                    : (chartConfig.title || `${chartType.charAt(0).toUpperCase() + chartType.slice(1)} Chart`)
+                }
               </h2>
               {mode === 'ai' && selectedSuggestion && (
                 <p className="text-sm text-gray-600 mt-1">{selectedSuggestion.description}</p>
@@ -464,7 +571,7 @@ export default function Visualize() {
                 <Download className="w-5 h-5" />
               </button>
 
-              {mode === 'manual' && savedChartId && (
+              {(mode === 'manual' || mode === 'nl') && savedChartId && (
                 <>
                   <button
                     className="p-2 text-gray-600 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"

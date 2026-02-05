@@ -7,10 +7,11 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.models.query import Query
-from app.schemas.visualization import VizRequest, VizResponse, VizSuggestion
+from app.schemas.visualization import VizRequest, VizResponse, VizSuggestion, NLVizRequest, NLVizResponse
 from app.services.data_service import DataService
 from app.services.visualization_service import VisualizationService
 from app.services.llm_service import LLMService
+from app.services.context_service import ContextService
 
 
 router = APIRouter()
@@ -145,6 +146,149 @@ async def suggest_visualizations(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error generating suggestions: {str(e)}",
+        )
+
+
+@router.post("/from-natural-language", response_model=NLVizResponse, status_code=status.HTTP_201_CREATED)
+async def generate_from_natural_language(
+    request: NLVizRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate visualization from natural language description"""
+
+    # Get dataset
+    dataset = await DataService.get_dataset(db, request.dataset_id, current_user.id)
+    if not dataset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dataset not found",
+        )
+
+    # Load DataFrame
+    try:
+        df = DataService.load_dataframe(dataset)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error loading dataset: {str(e)}",
+        )
+
+    # Try to find active context for this dataset
+    context = None
+    context_metadata = None
+    try:
+        context_service = ContextService(db)
+        context = await context_service.find_active_context_by_dataset(
+            dataset_id=request.dataset_id,
+            user_id=current_user.id
+        )
+
+        # Extract metadata if context exists
+        if context:
+            context_metadata = await context_service.get_context_metadata_for_dataset(
+                context=context,
+                dataset_id=request.dataset_id
+            )
+    except Exception as e:
+        # Log error but don't fail the request if context lookup fails
+        print(f"Warning: Context lookup failed: {str(e)}")
+
+    # Parse natural language
+    try:
+        llm_service = LLMService()
+        parsed_config = await llm_service.generate_visualization_from_nl(
+            description=request.description,
+            schema=dataset.schema,
+            sample_data=df.head(5).to_dict(orient="records"),
+            context_metadata=context_metadata,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "Could not understand request",
+                "message": str(e),
+                "suggestions": [
+                    "Specify the chart type (e.g., 'bar chart')",
+                    "Mention columns to visualize",
+                    "Example: 'show total sales by region'"
+                ]
+            }
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error parsing description: {str(e)}",
+        )
+
+    # Validate columns exist
+    available_cols = [col["name"] for col in dataset.schema.get("columns", [])]
+    x_col = parsed_config["config"].get("x_column")
+    y_col = parsed_config["config"].get("y_column")
+
+    if x_col and x_col not in available_cols:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "Column not found",
+                "missing": x_col,
+                "available": available_cols
+            }
+        )
+    if y_col and isinstance(y_col, str) and y_col not in available_cols:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "error": "Column not found",
+                "missing": y_col,
+                "available": available_cols
+            }
+        )
+    if y_col and isinstance(y_col, list):
+        for col in y_col:
+            if col not in available_cols:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail={
+                        "error": "Column not found",
+                        "missing": col,
+                        "available": available_cols
+                    }
+                )
+
+    # Generate chart
+    try:
+        chart_data = VisualizationService.create_plotly_chart(
+            df=df,
+            chart_type=parsed_config["chart_type"],
+            config=parsed_config["config"],
+        )
+
+        # Save visualization
+        viz = await VisualizationService.save_visualization(
+            db=db,
+            user=current_user,
+            dataset_id=request.dataset_id,
+            chart_type=parsed_config["chart_type"],
+            config=parsed_config["config"],
+            chart_data=chart_data,
+            name=request.name or parsed_config.get("title"),
+            description=f"Generated from: {request.description}",
+        )
+
+        return {
+            "visualization": viz,
+            "parsed_intent": parsed_config,
+            "suggestions": None,
+            "context_used": context is not None,
+            "context_name": context.name if context else None,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generating visualization: {str(e)}",
         )
 
 
