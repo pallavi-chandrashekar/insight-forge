@@ -383,25 +383,80 @@ const ContextDetailPage: React.FC = () => {
               <p className="text-gray-500">No relationships defined</p>
             ) : (
               <div className="space-y-4">
-                {context.relationships.map((rel, idx) => (
-                  <div key={idx} className="border border-gray-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-lg mb-2">{rel.name}</h3>
-                    <p className="text-sm text-gray-600 mb-3">{rel.description}</p>
-                    <div className="bg-gray-50 p-3 rounded space-y-2 text-sm">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-mono bg-blue-100 px-2 py-1 rounded">{rel.left_dataset}</span>
-                        <span className="text-gray-600">{rel.join_type.toUpperCase()} JOIN</span>
-                        <span className="font-mono bg-blue-100 px-2 py-1 rounded">{rel.right_dataset}</span>
+                {context.relationships.map((rel: any, idx) => {
+                  // Handle both formats: structured (left_dataset/right_dataset) and simple (from_dataset/to_dataset)
+                  const leftDataset = rel.left_dataset || rel.from_dataset;
+                  const rightDataset = rel.right_dataset || rel.to_dataset;
+                  const joinType = rel.join_type || rel.type || 'many_to_one';
+                  const hasConditions = rel.conditions && rel.conditions.length > 0;
+                  const hasSimpleColumns = rel.from_column && rel.to_column;
+
+                  return (
+                    <div key={idx} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-semibold text-lg">{rel.name || `Relationship ${idx + 1}`}</h3>
+                        <span className="text-xs bg-blue-100 px-2 py-1 rounded">
+                          {rel.id || `rel_${idx}`}
+                        </span>
                       </div>
-                      <div className="font-semibold mt-2">Conditions:</div>
-                      {rel.conditions && rel.conditions.map((cond: any, condIdx: number) => (
-                        <div key={condIdx} className="ml-4 font-mono text-xs">
-                          {cond.left_column} {cond.operator} {cond.right_column}
+                      {rel.description && <p className="text-sm text-gray-600 mb-3">{rel.description}</p>}
+
+                      <div className="bg-gray-50 p-3 rounded space-y-2 text-sm">
+                        {/* Dataset relationship flow */}
+                        <div className="flex items-center space-x-2">
+                          <span className="font-mono bg-blue-100 text-blue-800 px-2 py-1 rounded font-semibold">
+                            {leftDataset}
+                          </span>
+                          <span className="text-gray-600">
+                            <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                            </svg>
+                          </span>
+                          <span className="font-mono bg-purple-100 text-purple-800 px-2 py-1 rounded font-semibold">
+                            {rightDataset}
+                          </span>
                         </div>
-                      ))}
+
+                        <div className="flex items-center space-x-2">
+                          <span className="text-gray-600">Type:</span>
+                          <span className="font-semibold text-gray-900">
+                            {joinType.replace('_', ' ').toUpperCase()}
+                          </span>
+                        </div>
+
+                        {/* Conditions - structured format */}
+                        {hasConditions && (
+                          <>
+                            <div className="font-semibold mt-2 text-gray-700">Join Conditions:</div>
+                            {rel.conditions.map((cond: any, condIdx: number) => (
+                              <div key={condIdx} className="ml-4 bg-white p-2 rounded border border-gray-200">
+                                <span className="font-mono text-xs">
+                                  <span className="text-blue-600">{leftDataset}.{cond.left_column}</span>
+                                  {' '}<span className="text-gray-600">{cond.operator || '='}</span>{' '}
+                                  <span className="text-purple-600">{rightDataset}.{cond.right_column}</span>
+                                </span>
+                              </div>
+                            ))}
+                          </>
+                        )}
+
+                        {/* Simple format columns */}
+                        {!hasConditions && hasSimpleColumns && (
+                          <>
+                            <div className="font-semibold mt-2 text-gray-700">Join Condition:</div>
+                            <div className="ml-4 bg-white p-2 rounded border border-gray-200">
+                              <span className="font-mono text-xs">
+                                <span className="text-blue-600">{leftDataset}.{rel.from_column}</span>
+                                {' '}<span className="text-gray-600">=</span>{' '}
+                                <span className="text-purple-600">{rightDataset}.{rel.to_column}</span>
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

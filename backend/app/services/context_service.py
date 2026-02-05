@@ -70,15 +70,21 @@ class ContextService:
         self,
         user_id: UUID,
         content: str,
-        validate: bool = True
+        validate: bool = True,
+        dataset_id: Optional[UUID] = None
     ) -> Context:
         """
         Create a new context from file content.
 
+        Supports TWO formats:
+        1. Structured: YAML frontmatter + Markdown
+        2. Simple: Plain markdown (requires dataset_id parameter)
+
         Args:
             user_id: User ID
-            content: Full context file content (YAML + Markdown)
+            content: Full context file content
             validate: Whether to validate context (default: True)
+            dataset_id: Dataset ID (required for simple format, optional for structured)
 
         Returns:
             Created Context object
@@ -87,8 +93,9 @@ class ContextService:
             ContextServiceError: If creation fails
         """
         try:
-            # Parse context file
-            parsed = ContextParser.parse_and_validate(content)
+            # Parse context file (handles both formats)
+            dataset_id_str = str(dataset_id) if dataset_id else None
+            parsed = ContextParser.parse_and_validate(content, dataset_id=dataset_id_str)
         except ContextParseError as e:
             raise ContextServiceError(f"Context parsing failed: {str(e)}")
 
@@ -264,16 +271,20 @@ class ContextService:
         context_id: UUID,
         user_id: UUID,
         content: str,
-        validate: bool = True
+        validate: bool = True,
+        dataset_id: Optional[UUID] = None
     ) -> Context:
         """
         Update context with new content.
+
+        Supports both structured (YAML) and simple (plain markdown) formats.
 
         Args:
             context_id: Context ID
             user_id: User ID
             content: New context file content
             validate: Whether to validate
+            dataset_id: Dataset ID (required for simple format)
 
         Returns:
             Updated Context object
@@ -286,9 +297,10 @@ class ContextService:
         if not context:
             raise ContextServiceError("Context not found")
 
-        # Parse new content
+        # Parse new content (handles both formats)
         try:
-            parsed = ContextParser.parse_and_validate(content)
+            dataset_id_str = str(dataset_id) if dataset_id else None
+            parsed = ContextParser.parse_and_validate(content, dataset_id=dataset_id_str)
         except ContextParseError as e:
             raise ContextServiceError(f"Context parsing failed: {str(e)}")
 

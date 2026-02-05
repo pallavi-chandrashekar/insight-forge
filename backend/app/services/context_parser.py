@@ -25,13 +25,18 @@ class ContextParser:
     [Markdown Content]
     """
 
-    @staticmethod
-    def parse(content: str) -> Tuple[Dict[str, Any], str]:
+    @classmethod
+    def parse(cls, content: str, dataset_id: Optional[str] = None) -> Tuple[Dict[str, Any], str]:
         """
         Parse context file into YAML frontmatter and markdown content.
 
+        Supports TWO formats:
+        1. Structured: YAML frontmatter + Markdown (original format)
+        2. Simple: Plain markdown only (new simplified format)
+
         Args:
             content: Full context file content
+            dataset_id: Required for simple format (optional for structured)
 
         Returns:
             Tuple of (parsed_yaml_dict, markdown_content)
@@ -39,31 +44,175 @@ class ContextParser:
         Raises:
             ContextParseError: If parsing fails
         """
-        # Extract YAML frontmatter
+        # Check if content starts with YAML frontmatter
         yaml_match = re.match(
             r'^---\s*\n(.*?)\n---\s*\n(.*)$',
             content,
             re.DOTALL
         )
 
-        if not yaml_match:
+        if yaml_match:
+            # STRUCTURED FORMAT: Parse YAML frontmatter
+            yaml_content = yaml_match.group(1)
+            markdown_content = yaml_match.group(2).strip()
+
+            # Parse YAML
+            try:
+                parsed_yaml = yaml.safe_load(yaml_content)
+                if not isinstance(parsed_yaml, dict):
+                    raise ContextParseError("YAML frontmatter must be a dictionary")
+            except yaml.YAMLError as e:
+                raise ContextParseError(f"YAML parsing error: {str(e)}")
+
+            return parsed_yaml, markdown_content
+
+        else:
+            # SIMPLE FORMAT: Plain markdown - auto-generate structure
+            # Supports both single and multi-dataset via markdown sections
+
+            # Extract title from first header (if exists)
+            title_match = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
+            name = title_match.group(1).strip() if title_match else "Dataset Context"
+
+            # Extract first paragraph as short description
+            paragraphs = [p.strip() for p in content.split('\n\n') if p.strip() and not p.strip().startswith('#')]
+            short_description = paragraphs[0][:200] if paragraphs else "Dataset context documentation"
+
+            # Check for multi-dataset markers using ## Dataset: or ## Datasets sections
+            datasets_list = cls._extract_datasets_from_markdown(content, dataset_id)
+
+            # Determine context type
+            context_type = "multi_dataset" if len(datasets_list) > 1 else "single_dataset"
+
+            # Extract relationships from markdown
+            relationships = cls._extract_relationships_from_markdown(content)
+
+            # Auto-generate YAML structure
+            parsed_yaml = {
+                "name": name,
+                "version": "1.0.0",
+                "description": short_description,
+                "context_type": context_type,
+                "status": "active",
+                "datasets": datasets_list
+            }
+
+            # Add relationships if found
+            if relationships:
+                parsed_yaml["relationships"] = relationships
+
+            return parsed_yaml, content
+
+    @classmethod
+    def _extract_datasets_from_markdown(cls, content: str, dataset_id: Optional[str] = None) -> list:
+        """
+        Extract dataset definitions from simple markdown format.
+
+        Supports patterns like:
+        ## Dataset: Orders (id: order-uuid)
+        ## Dataset: Customers (id: customer-uuid)
+
+        Or:
+        ## Datasets
+        - Orders (id: order-uuid)
+        - Customers (id: customer-uuid)
+        """
+        datasets = []
+
+        # Pattern 1: Individual headers "## Dataset: Name (id: uuid)"
+        pattern1 = r'##\s+Dataset:\s+(.+?)\s+\(id:\s*([a-f0-9-]+)\)'
+        matches1 = re.finditer(pattern1, content, re.IGNORECASE)
+
+        for match in matches1:
+            dataset_name = match.group(1).strip()
+            dataset_uuid = match.group(2).strip()
+            datasets.append({
+                "id": dataset_name.lower().replace(" ", "_"),
+                "name": dataset_name,
+                "dataset_id": dataset_uuid
+            })
+
+        # Pattern 2: List under "## Datasets" header
+        pattern2 = r'##\s+Datasets?\s*\n((?:[-*]\s+.+\n?)+)'
+        match2 = re.search(pattern2, content, re.IGNORECASE)
+
+        if match2:
+            list_content = match2.group(1)
+            # Extract each list item: "- Name (id: uuid)"
+            item_pattern = r'[-*]\s+(.+?)\s+\(id:\s*([a-f0-9-]+)\)'
+            for item_match in re.finditer(item_pattern, list_content):
+                dataset_name = item_match.group(1).strip()
+                dataset_uuid = item_match.group(2).strip()
+                datasets.append({
+                    "id": dataset_name.lower().replace(" ", "_"),
+                    "name": dataset_name,
+                    "dataset_id": dataset_uuid
+                })
+
+        # Fallback: If no datasets found and dataset_id provided, create single dataset
+        if not datasets and dataset_id:
+            # Extract name from first header
+            title_match = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
+            name = title_match.group(1).strip() if title_match else "Dataset Context"
+
+            datasets.append({
+                "id": "main",
+                "name": name,
+                "dataset_id": dataset_id
+            })
+
+        if not datasets:
             raise ContextParseError(
-                "Invalid context file format. "
-                "Expected YAML frontmatter between --- delimiters"
+                "No datasets found. For simple format, either:\n"
+                "1. Provide dataset_id parameter (single dataset), OR\n"
+                "2. Use markdown syntax:\n"
+                "   ## Dataset: Orders (id: your-uuid)\n"
+                "   ## Dataset: Customers (id: your-uuid)"
             )
 
-        yaml_content = yaml_match.group(1)
-        markdown_content = yaml_match.group(2).strip()
+        return datasets
 
-        # Parse YAML
-        try:
-            parsed_yaml = yaml.safe_load(yaml_content)
-            if not isinstance(parsed_yaml, dict):
-                raise ContextParseError("YAML frontmatter must be a dictionary")
-        except yaml.YAMLError as e:
-            raise ContextParseError(f"YAML parsing error: {str(e)}")
+    @classmethod
+    def _extract_relationships_from_markdown(cls, content: str) -> Optional[list]:
+        """
+        Extract relationship definitions from markdown.
 
-        return parsed_yaml, markdown_content
+        Supports pattern:
+        ## Relationships
+        - Orders → Customers via customer_id
+        - Orders → Products via product_id
+        """
+        relationships = []
+
+        # Find relationships section
+        pattern = r'##\s+Relationships?\s*\n((?:[-*]\s+.+\n?)+)'
+        match = re.search(pattern, content, re.IGNORECASE)
+
+        if not match:
+            return None
+
+        list_content = match.group(1)
+
+        # Extract each relationship: "- From → To via column" or "- From -> To via column"
+        rel_pattern = r'[-*]\s+(\w+)\s*(?:→|->)\s*(\w+)\s+via\s+(\w+)'
+
+        for rel_match in re.finditer(rel_pattern, list_content):
+            from_dataset = rel_match.group(1).strip().lower()
+            to_dataset = rel_match.group(2).strip().lower()
+            column = rel_match.group(3).strip()
+
+            relationships.append({
+                "id": f"{from_dataset}_{to_dataset}",
+                "name": f"{from_dataset.title()} to {to_dataset.title()}",
+                "type": "many_to_one",
+                "from_dataset": from_dataset,
+                "from_column": column,
+                "to_dataset": to_dataset,
+                "to_column": column,
+                "description": f"Relationship from {from_dataset} to {to_dataset} via {column}"
+            })
+
+        return relationships if relationships else None
 
     @staticmethod
     def validate_required_fields(parsed_yaml: Dict[str, Any]) -> None:
@@ -225,12 +374,15 @@ class ContextParser:
         return parsed_yaml
 
     @classmethod
-    def parse_and_validate(cls, content: str) -> Dict[str, Any]:
+    def parse_and_validate(cls, content: str, dataset_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Parse and perform basic validation on context file.
 
+        Supports both structured (YAML) and simple (plain markdown) formats.
+
         Args:
             content: Full context file content
+            dataset_id: Required for simple format (optional for structured)
 
         Returns:
             Dictionary with parsed components
@@ -238,8 +390,8 @@ class ContextParser:
         Raises:
             ContextParseError: If parsing or validation fails
         """
-        # Parse YAML and Markdown
-        parsed_yaml, markdown_content = cls.parse(content)
+        # Parse YAML and Markdown (handles both formats)
+        parsed_yaml, markdown_content = cls.parse(content, dataset_id=dataset_id)
 
         # Validate required fields
         cls.validate_required_fields(parsed_yaml)
