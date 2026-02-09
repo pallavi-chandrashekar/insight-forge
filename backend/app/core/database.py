@@ -9,18 +9,31 @@ class Base(DeclarativeBase):
     pass
 
 
+def get_database_url() -> str:
+    """Get database URL, converting Render's postgres:// to postgresql+asyncpg://"""
+    url = settings.DATABASE_URL
+    # Render provides postgres:// but SQLAlchemy needs postgresql+asyncpg://
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
+DATABASE_URL = get_database_url()
+
 # Create engine with appropriate settings for database type
-if "sqlite" in settings.DATABASE_URL:
+if "sqlite" in DATABASE_URL:
     # SQLite doesn't support pool_size and max_overflow
     engine = create_async_engine(
-        settings.DATABASE_URL,
+        DATABASE_URL,
         echo=settings.DEBUG,
         connect_args={"check_same_thread": False}
     )
 else:
     # PostgreSQL with connection pooling
     engine = create_async_engine(
-        settings.DATABASE_URL,
+        DATABASE_URL,
         pool_size=settings.DATABASE_POOL_SIZE,
         max_overflow=settings.DATABASE_MAX_OVERFLOW,
         echo=settings.DEBUG,
