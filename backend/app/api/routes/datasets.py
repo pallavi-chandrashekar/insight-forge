@@ -1,8 +1,12 @@
 import os
 import uuid
+import json
+import csv
+import io
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
+from typing import Optional, Literal
 
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -205,13 +209,19 @@ async def preview_dataset(
         )
 
 
-@router.delete("/{dataset_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_dataset(
+@router.get("/{dataset_id}/schema/download")
+async def download_schema(
     dataset_id: uuid.UUID,
+    format: Literal["json", "csv"] = "json",
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Delete a dataset"""
+    """
+    Download the dataset schema in JSON or CSV format.
+
+    Query Parameters:
+    - format: 'json' (default) or 'csv'
+    """
     dataset = await DataService.get_dataset(db, dataset_id, current_user.id)
     if not dataset:
         raise HTTPException(
@@ -219,4 +229,119 @@ async def delete_dataset(
             detail="Dataset not found",
         )
 
-    await DataService.delete_dataset(db, dataset)
+    if not dataset.schema:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Schema not available for this dataset",
+        )
+
+    # Prepare schema data
+    schema_data = {
+        "dataset_name": dataset.name,
+        "dataset_id": str(dataset.id),
+        "row_count": dataset.row_count,
+        "column_count": dataset.column_count,
+        "columns": dataset.schema.get("columns", []),
+    }
+
+    # Generate filename
+    safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in dataset.name)
+    filename = f"{safe_name}_schema.{format}"
+
+    if format == "json":
+        # Return JSON file
+        content = json.dumps(schema_data, indent=2)
+        return StreamingResponse(
+            io.BytesIO(content.encode()),
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    else:
+        # Return CSV file
+        output = io.StringIO()
+        writer = csv.writer(output)
+
+        # Write header
+        writer.writerow(["Column Name", "Data Type", "Nullable", "Sample Values"])
+
+        # Write column data
+        for col in schema_data["columns"]:
+            sample_values = ", ".join(str(v) for v in col.get("sample_values", [])[:5])
+            writer.writerow([
+                col.get("name", ""),
+                col.get("dtype", ""),
+                "Yes" if col.get("nullable") else "No",
+                sample_values,
+            ])
+
+        content = output.getvalue()
+        return StreamingResponse(
+            io.BytesIO(content.encode()),
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+
+@router.get("/{dataset_id}/delete-info")
+async def get_delete_info(
+    dataset_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get information about what will be affected when deleting this dataset.
+
+    Returns context dependencies so frontend can prompt user for confirmation
+    if other datasets would be affected.
+    """
+    dataset = await DataService.get_dataset(db, dataset_id, current_user.id)
+    if not dataset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dataset not found",
+        )
+
+    dependencies = await DataService.check_context_dependencies(db, dataset)
+    return {
+        "dataset_id": str(dataset_id),
+        "dataset_name": dataset.name,
+        **dependencies
+    }
+
+
+@router.delete("/{dataset_id}")
+async def delete_dataset(
+    dataset_id: uuid.UUID,
+    delete_context: bool = True,
+    delete_linked_datasets: bool = False,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Delete a dataset and optionally its linked context.
+
+    Query Parameters:
+    - delete_context: If True (default), also delete the linked context
+    - delete_linked_datasets: If True, delete ALL datasets linked to the same context
+
+    Use GET /{dataset_id}/delete-info first to check for dependencies.
+    """
+    dataset = await DataService.get_dataset(db, dataset_id, current_user.id)
+    if not dataset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dataset not found",
+        )
+
+    result = await DataService.delete_dataset(
+        db,
+        dataset,
+        delete_context=delete_context,
+        delete_linked_datasets=delete_linked_datasets
+    )
+
+    return {
+        "success": True,
+        "message": "Dataset deleted successfully",
+        **result
+    }

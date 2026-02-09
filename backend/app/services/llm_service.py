@@ -517,3 +517,87 @@ Generate a SQL query to answer this question."""
         if query.endswith("```"):
             query = query[:-3]
         return query.strip()
+
+    async def chat(self, messages: list[dict[str, str]], max_tokens: Optional[int] = None) -> str:
+        """
+        Chat with Claude using a message history.
+
+        Args:
+            messages: List of message dicts with 'role' and 'content'
+                     First message should be 'system' role
+            max_tokens: Optional override for max tokens (default: uses config value)
+
+        Returns:
+            Assistant's response text
+        """
+        # Extract system message if present
+        system_message = None
+        user_messages = []
+
+        for msg in messages:
+            if msg.get('role') == 'system':
+                system_message = msg.get('content', '')
+            else:
+                user_messages.append({
+                    'role': msg.get('role', 'user'),
+                    'content': msg.get('content', '')
+                })
+
+        # Make API call
+        response = await self.client.messages.create(
+            model=self.model,
+            max_tokens=max_tokens if max_tokens else self.max_tokens,
+            system=system_message if system_message else "",
+            messages=user_messages,
+        )
+
+        return response.content[0].text
+
+    async def generate_text(self, prompt: str) -> str:
+        """
+        Generate text from a simple prompt.
+
+        Args:
+            prompt: Text prompt
+
+        Returns:
+            Generated text
+        """
+        response = await self.client.messages.create(
+            model=self.model,
+            max_tokens=self.max_tokens,
+            messages=[{"role": "user", "content": prompt}],
+        )
+
+        return response.content[0].text
+
+    async def generate_structured_output(self, prompt: str, output_format: str = "json") -> str:
+        """
+        Generate structured output (JSON, etc.) from a prompt.
+
+        Args:
+            prompt: Text prompt
+            output_format: Format type (default: "json")
+
+        Returns:
+            Generated structured output as string
+        """
+        enhanced_prompt = f"""{prompt}
+
+IMPORTANT: Return ONLY valid {output_format.upper()}, no additional text or explanation."""
+
+        response = await self.generate_text(enhanced_prompt)
+
+        # Clean up response
+        cleaned = response.strip()
+
+        # Remove markdown code blocks if present
+        if cleaned.startswith(f"```{output_format}"):
+            cleaned = cleaned[len(f"```{output_format}"):].strip()
+        elif cleaned.startswith("```"):
+            cleaned = cleaned[3:].strip()
+
+        if cleaned.endswith("```"):
+            cleaned = cleaned[:-3].strip()
+
+        return cleaned

@@ -132,3 +132,103 @@ export interface NLVizResponse {
   }
   suggestions?: string[]
 }
+
+export interface SmartImportRequest {
+  url: string
+  dataset_name?: string
+}
+
+export interface SmartImportMessage {
+  type: 'success' | 'info' | 'warning' | 'error'
+  title: string
+  message: string
+  action: 'import_data' | 'create_context' | 'guide' | 'inspect'
+  action_label: string
+  details?: string
+}
+
+export interface SmartImportResponse {
+  url_type: string
+  platform?: string
+  message: SmartImportMessage
+  can_import_data: boolean
+  can_create_context: boolean
+  documentation_content?: string
+}
+
+export interface SmartImportContextResult {
+  success: boolean
+  context_id: string
+  context_name: string
+  message: string
+}
+
+export interface SupportedPlatforms {
+  data_platforms: {
+    supported_formats: string[]
+    examples: string[]
+  }
+  documentation_platforms: {
+    supported: string[]
+    examples: string[]
+  }
+  dataset_platforms: {
+    supported: string[]
+    guidance: string
+    examples: string[]
+  }
+}
+
+export interface KaggleImportResponse {
+  success: boolean
+  dataset_id: string
+  dataset_name: string
+  row_count: number
+  column_count: number
+  context_id?: string
+  context_name?: string
+  context_error?: string
+  credentials_saved?: boolean
+}
+
+export interface KaggleCredentials {
+  has_credentials: boolean
+  kaggle_username?: string
+  is_valid?: boolean
+}
+
+export interface ContextChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface ContextChatRequest {
+  context_id: string
+  question: string
+  conversation_history?: ContextChatMessage[]
+}
+
+export interface ContextChatResponse {
+  answer: string
+  context_name: string
+  context_id: string
+  sources?: string[]
+  follow_up_suggestions?: string[]
+}
+
+export interface DatasetDeleteInfo {
+  dataset_id: string
+  dataset_name: string
+  has_context: boolean
+  context_id?: string
+  context_name?: string
+  other_datasets: Array<{ id: string; name: string }>
+  can_delete_directly: boolean
+}
+
+export interface DatasetDeleteResult {
+  success: boolean
+  message: string
+  deleted_datasets: Array<{ id: string; name: string }>
+  deleted_context?: { id: string; name: string }
+}

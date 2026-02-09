@@ -2,12 +2,21 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { datasetAPI, queryAPI } from '../services/api'
 import type { Dataset, QueryHistoryItem } from '../types'
-import { Database, Search, Upload, FileText, Calendar } from 'lucide-react'
+import { Database, Search, Upload, FileText, Calendar, Sparkles } from 'lucide-react'
+import SmartImportModal from '../components/SmartImportModal'
+import UploadModal from '../components/UploadModal'
+import QueryHistoryModal from '../components/QueryHistoryModal'
+import DatasetsModal from '../components/DatasetsModal'
 
 export default function Dashboard() {
   const [datasets, setDatasets] = useState<Dataset[]>([])
   const [recentQueries, setRecentQueries] = useState<QueryHistoryItem[]>([])
+  const [totalQueries, setTotalQueries] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  const [isSmartImportOpen, setIsSmartImportOpen] = useState(false)
+  const [isUploadOpen, setIsUploadOpen] = useState(false)
+  const [isQueryHistoryOpen, setIsQueryHistoryOpen] = useState(false)
+  const [isDatasetsOpen, setIsDatasetsOpen] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -20,6 +29,7 @@ export default function Dashboard() {
         queryAPI.history(),
       ])
       setDatasets(datasetsData)
+      setTotalQueries(queriesData.length)
       setRecentQueries(queriesData.slice(0, 5))
     } catch (error) {
       console.error('Error loading dashboard data:', error)
@@ -43,45 +53,84 @@ export default function Dashboard() {
         <p className="text-gray-600 mt-2">Welcome to InsightForge</p>
       </div>
 
+      {/* Modals */}
+      <UploadModal
+        isOpen={isUploadOpen}
+        onClose={() => setIsUploadOpen(false)}
+      />
+      <SmartImportModal
+        isOpen={isSmartImportOpen}
+        onClose={() => setIsSmartImportOpen(false)}
+      />
+      <QueryHistoryModal
+        isOpen={isQueryHistoryOpen}
+        onClose={() => setIsQueryHistoryOpen(false)}
+      />
+      <DatasetsModal
+        isOpen={isDatasetsOpen}
+        onClose={() => setIsDatasetsOpen(false)}
+      />
+
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="card">
-          <div className="flex items-center justify-between">
+          <button
+            onClick={() => setIsDatasetsOpen(true)}
+            className="flex items-center justify-between hover:bg-gray-50 transition-colors -m-6 p-6 rounded-lg w-full text-left"
+          >
             <div>
               <p className="text-gray-600 text-sm">Total Datasets</p>
               <p className="text-3xl font-bold text-gray-900 mt-1">{datasets.length}</p>
             </div>
-            <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-              <Database className="w-6 h-6 text-primary-600" />
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Database className="w-6 h-6 text-blue-600" />
             </div>
-          </div>
+          </button>
         </div>
 
         <div className="card">
-          <div className="flex items-center justify-between">
+          <button
+            onClick={() => setIsQueryHistoryOpen(true)}
+            className="flex items-center justify-between hover:bg-gray-50 transition-colors -m-6 p-6 rounded-lg w-full text-left"
+          >
             <div>
               <p className="text-gray-600 text-sm">Total Queries</p>
-              <p className="text-3xl font-bold text-gray-900 mt-1">{recentQueries.length}</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1">{totalQueries}</p>
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
               <Search className="w-6 h-6 text-green-600" />
             </div>
-          </div>
+          </button>
         </div>
 
         <div className="card">
-          <Link
-            to="/upload"
-            className="flex items-center justify-between hover:bg-gray-50 transition-colors -m-6 p-6 rounded-lg"
+          <button
+            onClick={() => setIsUploadOpen(true)}
+            className="flex items-center justify-between hover:bg-gray-50 transition-colors -m-6 p-6 rounded-lg w-full text-left"
           >
             <div>
               <p className="text-gray-600 text-sm">Quick Action</p>
               <p className="text-lg font-semibold text-gray-900 mt-1">Upload Dataset</p>
             </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Upload className="w-6 h-6 text-purple-600" />
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Upload className="w-6 h-6 text-blue-600" />
             </div>
-          </Link>
+          </button>
+        </div>
+
+        <div className="card">
+          <button
+            onClick={() => setIsSmartImportOpen(true)}
+            className="flex items-center justify-between hover:bg-gray-50 transition-all -m-6 p-6 rounded-lg w-full text-left"
+          >
+            <div>
+              <p className="text-gray-600 text-sm">Smart Import</p>
+              <p className="text-lg font-semibold text-gray-900 mt-1">Any URL</p>
+            </div>
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-blue-600" />
+            </div>
+          </button>
         </div>
       </div>
 
@@ -89,18 +138,24 @@ export default function Dashboard() {
       <div className="card">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900">Recent Datasets</h2>
-          <Link to="/upload" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+          <button
+            onClick={() => setIsUploadOpen(true)}
+            className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+          >
             Upload New
-          </Link>
+          </button>
         </div>
 
         {datasets.length === 0 ? (
           <div className="text-center py-12">
             <Database className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">No datasets yet</p>
-            <Link to="/upload" className="btn btn-primary mt-4 inline-flex">
+            <button
+              onClick={() => setIsUploadOpen(true)}
+              className="btn btn-primary mt-4 inline-flex"
+            >
               Upload Your First Dataset
-            </Link>
+            </button>
           </div>
         ) : (
           <div className="space-y-3">

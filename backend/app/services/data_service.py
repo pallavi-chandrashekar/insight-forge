@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.models.dataset import Dataset, SourceType
 from app.models.user import User
+from app.models.context import Context
 
 
 class DataService:
@@ -183,12 +184,114 @@ class DataService:
         return list(result.scalars().all())
 
     @staticmethod
-    async def delete_dataset(db: AsyncSession, dataset: Dataset) -> None:
-        """Delete a dataset"""
-        if dataset.file_path and os.path.exists(dataset.file_path):
-            os.remove(dataset.file_path)
-        await db.delete(dataset)
+    async def check_context_dependencies(db: AsyncSession, dataset: Dataset) -> dict:
+        """
+        Check if the dataset's context is linked to other datasets.
+
+        Returns:
+            dict with:
+            - has_context: bool
+            - context_id: str or None
+            - context_name: str or None
+            - other_datasets: list of {id, name} for other datasets using same context
+            - can_delete_directly: bool (True if no other datasets use the context)
+        """
+        if not dataset.context_id:
+            return {
+                "has_context": False,
+                "context_id": None,
+                "context_name": None,
+                "other_datasets": [],
+                "can_delete_directly": True
+            }
+
+        # Get the context
+        context = await db.get(Context, dataset.context_id)
+        if not context:
+            return {
+                "has_context": False,
+                "context_id": None,
+                "context_name": None,
+                "other_datasets": [],
+                "can_delete_directly": True
+            }
+
+        # Find other datasets linked to the same context
+        result = await db.execute(
+            select(Dataset).where(
+                Dataset.context_id == dataset.context_id,
+                Dataset.id != dataset.id
+            )
+        )
+        other_datasets = result.scalars().all()
+
+        return {
+            "has_context": True,
+            "context_id": str(context.id),
+            "context_name": context.name,
+            "other_datasets": [{"id": str(ds.id), "name": ds.name} for ds in other_datasets],
+            "can_delete_directly": len(other_datasets) == 0
+        }
+
+    @staticmethod
+    async def delete_dataset(
+        db: AsyncSession,
+        dataset: Dataset,
+        delete_context: bool = True,
+        delete_linked_datasets: bool = False
+    ) -> dict:
+        """
+        Delete a dataset and optionally its linked context.
+
+        Args:
+            db: Database session
+            dataset: Dataset to delete
+            delete_context: If True, delete the linked context (default: True)
+            delete_linked_datasets: If True, also delete other datasets linked to same context
+
+        Returns:
+            dict with deletion summary
+        """
+        deleted_datasets = []
+        deleted_context = None
+
+        context_id = dataset.context_id
+        context = None
+
+        if context_id:
+            context = await db.get(Context, context_id)
+
+        # If deleting linked datasets too
+        if delete_linked_datasets and context_id:
+            # Find and delete all datasets linked to this context
+            result = await db.execute(
+                select(Dataset).where(Dataset.context_id == context_id)
+            )
+            linked_datasets = result.scalars().all()
+
+            for ds in linked_datasets:
+                if ds.file_path and os.path.exists(ds.file_path):
+                    os.remove(ds.file_path)
+                deleted_datasets.append({"id": str(ds.id), "name": ds.name})
+                await db.delete(ds)
+        else:
+            # Just delete this dataset
+            if dataset.file_path and os.path.exists(dataset.file_path):
+                os.remove(dataset.file_path)
+            deleted_datasets.append({"id": str(dataset.id), "name": dataset.name})
+            await db.delete(dataset)
+
+        # Delete context if requested and exists
+        if delete_context and context:
+            deleted_context = {"id": str(context.id), "name": context.name}
+            await db.delete(context)
+
         await db.commit()
+
+        return {
+            "deleted_datasets": deleted_datasets,
+            "deleted_context": deleted_context
+        }
 
     @staticmethod
     def load_dataframe(dataset: Dataset) -> pd.DataFrame:

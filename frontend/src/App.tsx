@@ -5,12 +5,14 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Upload from './pages/Upload'
+import Datasets from './pages/Datasets'
 import Dataset from './pages/Dataset'
 import Query from './pages/Query'
 import Visualize from './pages/Visualize'
 import Contexts from './pages/Contexts'
 import ContextDetail from './pages/ContextDetail'
 import ContextCreate from './pages/ContextCreate'
+import Chat from './pages/Chat'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore()
@@ -50,12 +52,14 @@ function App() {
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="upload" element={<Upload />} />
+          <Route path="datasets" element={<Datasets />} />
           <Route path="datasets/:id" element={<Dataset />} />
           <Route path="query" element={<Query />} />
           <Route path="visualize" element={<Visualize />} />
           <Route path="contexts" element={<Contexts />} />
           <Route path="contexts/new" element={<ContextCreate />} />
           <Route path="contexts/:id" element={<ContextDetail />} />
+          <Route path="chat" element={<Chat />} />
         </Route>
       </Routes>
     </BrowserRouter>

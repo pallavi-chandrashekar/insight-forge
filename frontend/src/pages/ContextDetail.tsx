@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import contextService, { ContextDetail } from '../services/contextService';
 import ReactMarkdown from 'react-markdown';
-import mermaid from 'mermaid';
+import ContextChat from '../components/ContextChat';
+import { MessageCircle, FileText, Database, ArrowLeft, Download, Trash2 } from 'lucide-react';
+
+type TabId = 'chat' | 'documentation' | 'datasets' | 'overview';
 
 const ContextDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -10,27 +13,13 @@ const ContextDetailPage: React.FC = () => {
   const [context, setContext] = useState<ContextDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'datasets' | 'relationships' | 'metrics' | 'glossary' | 'rules' | 'markdown'>('overview');
+  const [activeTab, setActiveTab] = useState<TabId>('chat');
 
   useEffect(() => {
     if (id) {
       loadContext();
     }
   }, [id]);
-
-  useEffect(() => {
-    // Initialize Mermaid
-    mermaid.initialize({ startOnLoad: true, theme: 'default' });
-
-    // Render ER diagram if it exists
-    if (context?.data_model?.er_diagram) {
-      try {
-        mermaid.contentLoaded();
-      } catch (err) {
-        console.error('Mermaid rendering error:', err);
-      }
-    }
-  }, [context, activeTab]);
 
   const loadContext = async () => {
     try {
@@ -44,6 +33,41 @@ const ContextDetailPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Determine which tabs to show based on content
+  const tabs = useMemo(() => {
+    if (!context) return [];
+
+    const hasDatasets = context.datasets && context.datasets.length > 0;
+    const hasStructuredContent = hasDatasets ||
+      (context.metrics && context.metrics.length > 0) ||
+      (context.glossary && context.glossary.length > 0) ||
+      (context.relationships && context.relationships.length > 0);
+
+    // Always show Chat first - it's the main feature
+    const availableTabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
+      { id: 'chat', label: 'Ask Questions', icon: <MessageCircle className="w-4 h-4" /> },
+    ];
+
+    // Show Overview only if there's structured content
+    if (hasStructuredContent) {
+      availableTabs.push({ id: 'overview', label: 'Overview', icon: null });
+    }
+
+    // Show Datasets tab only if there are datasets
+    if (hasDatasets) {
+      availableTabs.push({
+        id: 'datasets',
+        label: `Datasets (${context.datasets.length})`,
+        icon: <Database className="w-4 h-4" />
+      });
+    }
+
+    // Always show Documentation
+    availableTabs.push({ id: 'documentation', label: 'Documentation', icon: <FileText className="w-4 h-4" /> });
+
+    return availableTabs;
+  }, [context]);
 
   const handleDownload = async () => {
     try {
@@ -62,7 +86,7 @@ const ContextDetailPage: React.FC = () => {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(`Are you sure you want to delete context "${context?.name}"?`)) {
+    if (!window.confirm(`Are you sure you want to delete "${context?.name}"?`)) {
       return;
     }
 
@@ -79,7 +103,7 @@ const ContextDetailPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="text-center py-12">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="mt-2 text-gray-600">Loading context...</p>
+          <p className="mt-2 text-gray-600">Loading...</p>
         </div>
       </div>
     );
@@ -97,147 +121,88 @@ const ContextDetailPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Header */}
+      {/* Header - Simplified */}
       <div className="mb-6">
-        <div className="flex justify-between items-start mb-4">
+        <button
+          onClick={() => navigate('/contexts')}
+          className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-1" />
+          Back to Contexts
+        </button>
+
+        <div className="flex justify-between items-start">
           <div>
-            <button
-              onClick={() => navigate('/contexts')}
-              className="text-blue-600 hover:text-blue-800 mb-2"
-            >
-              ← Back to Contexts
-            </button>
-            <h1 className="text-3xl font-bold text-gray-900">{context.name}</h1>
-            <p className="text-gray-600 mt-1">Version {context.version}</p>
+            <h1 className="text-2xl font-bold text-gray-900">{context.name}</h1>
+            <p className="text-gray-600 mt-1">{context.description}</p>
           </div>
           <div className="flex space-x-2">
             <button
               onClick={handleDownload}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+              className="flex items-center space-x-1 px-3 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
             >
-              Download
+              <Download className="w-4 h-4" />
+              <span>Download</span>
             </button>
             <button
               onClick={handleDelete}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+              className="flex items-center space-x-1 px-3 py-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100"
             >
-              Delete
+              <Trash2 className="w-4 h-4" />
+              <span>Delete</span>
             </button>
           </div>
         </div>
 
-        {/* Metadata */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-            context.context_type === 'single_dataset'
-              ? 'bg-blue-100 text-blue-800'
-              : 'bg-purple-100 text-purple-800'
-          }`}>
-            {context.context_type === 'single_dataset' ? 'Single Dataset' : 'Multi Dataset'}
-          </span>
-          <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-            context.status === 'active'
-              ? 'bg-green-100 text-green-800'
-              : context.status === 'draft'
-              ? 'bg-yellow-100 text-yellow-800'
-              : 'bg-gray-100 text-gray-800'
+        {/* Status badges - simplified */}
+        <div className="flex gap-2 mt-3">
+          <span className={`px-2 py-1 text-xs font-medium rounded ${
+            context.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
           }`}>
             {context.status}
           </span>
-          <span className={`px-3 py-1 text-sm font-semibold rounded-full ${
-            context.validation_status === 'passed'
-              ? 'bg-green-100 text-green-800'
-              : context.validation_status === 'warning'
-              ? 'bg-yellow-100 text-yellow-800'
-              : context.validation_status === 'failed'
-              ? 'bg-red-100 text-red-800'
-              : 'bg-gray-100 text-gray-800'
-          }`}>
-            Validation: {context.validation_status}
-          </span>
-          {context.category && (
-            <span className="px-3 py-1 text-sm bg-gray-100 text-gray-800 rounded-full">
-              {context.category}
-            </span>
-          )}
         </div>
-
-        <p className="text-gray-700 mb-4">{context.description}</p>
-
-        {/* Tags */}
-        {context.tags && context.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {context.tags.map((tag, idx) => (
-              <span key={idx} className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded">
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Validation Errors/Warnings */}
-        {context.validation_errors && context.validation_errors.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <h3 className="text-red-800 font-semibold mb-2">Validation Errors:</h3>
-            <ul className="list-disc list-inside space-y-1">
-              {context.validation_errors.map((err, idx) => (
-                <li key={idx} className="text-red-700 text-sm">
-                  {err.message} {err.field && `(${err.field})`}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {context.validation_warnings && context.validation_warnings.length > 0 && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-            <h3 className="text-yellow-800 font-semibold mb-2">Validation Warnings:</h3>
-            <ul className="list-disc list-inside space-y-1">
-              {context.validation_warnings.map((warn, idx) => (
-                <li key={idx} className="text-yellow-700 text-sm">
-                  {warn.message} {warn.field && `(${warn.field})`}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
 
-      {/* Tabs */}
+      {/* Tabs - Simplified */}
       <div className="border-b border-gray-200 mb-6">
-        <nav className="-mb-px flex space-x-8">
-          {[
-            { id: 'overview', label: 'Overview' },
-            { id: 'datasets', label: `Datasets (${context.datasets.length})` },
-            { id: 'relationships', label: `Relationships (${context.relationships?.length || 0})` },
-            { id: 'metrics', label: `Metrics (${context.metrics?.length || 0})` },
-            { id: 'glossary', label: `Glossary (${context.glossary?.length || 0})` },
-            { id: 'rules', label: `Business Rules (${context.business_rules?.length || 0})` },
-            { id: 'markdown', label: 'Documentation' },
-          ].map((tab) => (
+        <nav className="-mb-px flex space-x-6">
+          {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              onClick={() => setActiveTab(tab.id)}
+              className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
                 activeTab === tab.id
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              {tab.label}
+              {tab.icon}
+              <span>{tab.label}</span>
             </button>
           ))}
         </nav>
       </div>
 
       {/* Tab Content */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow">
+        {/* Chat Tab - Main Feature */}
+        {activeTab === 'chat' && (
+          <div className="h-[600px]">
+            <ContextChat
+              contextId={context.id}
+              contextName={context.name}
+            />
+          </div>
+        )}
+
+        {/* Overview Tab - Only for structured contexts */}
         {activeTab === 'overview' && (
-          <div>
+          <div className="p-6">
             <h2 className="text-xl font-bold mb-4">Context Overview</h2>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="bg-gray-50 p-4 rounded-lg">
                 <p className="text-sm text-gray-600">Datasets</p>
                 <p className="text-2xl font-bold text-gray-900">{context.datasets.length}</p>
@@ -251,55 +216,71 @@ const ContextDetailPage: React.FC = () => {
                 <p className="text-2xl font-bold text-gray-900">{context.metrics?.length || 0}</p>
               </div>
               <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">Glossary Terms</p>
+                <p className="text-sm text-gray-600">Glossary</p>
                 <p className="text-2xl font-bold text-gray-900">{context.glossary?.length || 0}</p>
               </div>
             </div>
 
-            {/* ER Diagram */}
-            {context.data_model?.er_diagram && (
+            {/* Metrics List */}
+            {context.metrics && context.metrics.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-3">Entity Relationship Diagram</h3>
-                <div className="bg-gray-50 p-6 rounded-lg overflow-x-auto">
-                  <div className="mermaid">
-                    {context.data_model.er_diagram}
-                  </div>
+                <h3 className="font-semibold mb-3">Metrics</h3>
+                <div className="space-y-2">
+                  {context.metrics.map((metric, idx) => (
+                    <div key={idx} className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex justify-between">
+                        <span className="font-medium">{metric.name}</span>
+                        <code className="text-xs bg-gray-200 px-2 py-1 rounded">{metric.expression}</code>
+                      </div>
+                      {metric.description && <p className="text-sm text-gray-600 mt-1">{metric.description}</p>}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
-            {/* Metadata */}
-            <div className="space-y-2">
-              {context.owner && (
-                <div className="flex">
-                  <span className="text-gray-600 w-32">Owner:</span>
-                  <span className="text-gray-900">{context.owner}</span>
+            {/* Glossary */}
+            {context.glossary && context.glossary.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-semibold mb-3">Business Glossary</h3>
+                <div className="space-y-2">
+                  {context.glossary.map((entry, idx) => (
+                    <div key={idx} className="bg-gray-50 p-3 rounded-lg">
+                      <span className="font-medium">{entry.term}:</span>
+                      <span className="text-gray-600 ml-2">{entry.definition}</span>
+                    </div>
+                  ))}
                 </div>
-              )}
-              {context.created_by && (
-                <div className="flex">
-                  <span className="text-gray-600 w-32">Created By:</span>
-                  <span className="text-gray-900">{context.created_by}</span>
+              </div>
+            )}
+
+            {/* Business Rules */}
+            {context.business_rules && context.business_rules.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-3">Business Rules</h3>
+                <div className="space-y-2">
+                  {context.business_rules.map((rule, idx) => (
+                    <div key={idx} className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <span className="font-medium">{rule.name}</span>
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          rule.severity === 'error' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {rule.severity}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">{rule.description}</p>
+                    </div>
+                  ))}
                 </div>
-              )}
-              {context.created_at && (
-                <div className="flex">
-                  <span className="text-gray-600 w-32">Created:</span>
-                  <span className="text-gray-900">{new Date(context.created_at).toLocaleString()}</span>
-                </div>
-              )}
-              {context.updated_at && (
-                <div className="flex">
-                  <span className="text-gray-600 w-32">Updated:</span>
-                  <span className="text-gray-900">{new Date(context.updated_at).toLocaleString()}</span>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
+        {/* Datasets Tab */}
         {activeTab === 'datasets' && (
-          <div>
+          <div className="p-6">
             <h2 className="text-xl font-bold mb-4">Datasets</h2>
             <div className="space-y-4">
               {context.datasets.map((ds, idx) => (
@@ -307,67 +288,37 @@ const ContextDetailPage: React.FC = () => {
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <h3 className="font-semibold text-lg">{ds.name}</h3>
-                      <p className="text-sm text-gray-600">ID: {ds.id}</p>
-                      {ds.alias && <p className="text-sm text-gray-600">Alias: {ds.alias}</p>}
+                      {ds.description && <p className="text-sm text-gray-600 mt-1">{ds.description}</p>}
                     </div>
-                    <span className="text-xs bg-gray-100 px-2 py-1 rounded">{ds.dataset_id}</span>
+                    <span className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">{ds.dataset_id}</span>
                   </div>
-                  {ds.description && <p className="text-gray-700 mb-3">{ds.description}</p>}
 
-                  {/* Catalog Info */}
-                  {ds.catalog && (
-                    <div className="bg-gray-50 p-3 rounded mt-3 space-y-2 text-sm">
-                      {ds.catalog.business_name && (
-                        <div><strong>Business Name:</strong> {ds.catalog.business_name}</div>
-                      )}
-                      {ds.catalog.purpose && (
-                        <div><strong>Purpose:</strong> {ds.catalog.purpose}</div>
-                      )}
-                      {ds.catalog.usage_notes && (
-                        <div><strong>Usage Notes:</strong> {ds.catalog.usage_notes}</div>
-                      )}
-                      {ds.catalog.compliance && ds.catalog.compliance.length > 0 && (
-                        <div>
-                          <strong>Compliance:</strong>{' '}
-                          {ds.catalog.compliance.map((c: string, i: number) => (
-                            <span key={i} className="inline-block bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs ml-1">
-                              {c}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Data Dictionary */}
+                  {/* Columns Table */}
                   {ds.columns && ds.columns.length > 0 && (
-                    <div className="mt-4">
-                      <h4 className="font-semibold mb-2">Data Dictionary ({ds.columns.length} columns)</h4>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200 text-sm">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Column</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Business Name</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                    <div className="mt-4 overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Column</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Type</th>
+                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Description</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {ds.columns.slice(0, 10).map((col: any, colIdx: number) => (
+                            <tr key={colIdx}>
+                              <td className="px-3 py-2 font-mono text-xs">{col.name}</td>
+                              <td className="px-3 py-2 font-mono text-xs text-gray-500">{col.data_type}</td>
+                              <td className="px-3 py-2 text-gray-600">{col.description || '-'}</td>
                             </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {ds.columns.map((col: any, colIdx: number) => (
-                              <tr key={colIdx}>
-                                <td className="px-3 py-2 font-mono text-xs">
-                                  {col.name}
-                                  {col.primary_key && <span className="ml-1 text-blue-600">PK</span>}
-                                </td>
-                                <td className="px-3 py-2">{col.business_name || '-'}</td>
-                                <td className="px-3 py-2 font-mono text-xs">{col.data_type}</td>
-                                <td className="px-3 py-2 text-gray-600">{col.description || '-'}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                          ))}
+                        </tbody>
+                      </table>
+                      {ds.columns.length > 10 && (
+                        <p className="text-sm text-gray-500 mt-2 px-3">
+                          + {ds.columns.length - 10} more columns
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -376,192 +327,9 @@ const ContextDetailPage: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'relationships' && (
-          <div>
-            <h2 className="text-xl font-bold mb-4">Relationships</h2>
-            {!context.relationships || context.relationships.length === 0 ? (
-              <p className="text-gray-500">No relationships defined</p>
-            ) : (
-              <div className="space-y-4">
-                {context.relationships.map((rel: any, idx) => {
-                  // Handle both formats: structured (left_dataset/right_dataset) and simple (from_dataset/to_dataset)
-                  const leftDataset = rel.left_dataset || rel.from_dataset;
-                  const rightDataset = rel.right_dataset || rel.to_dataset;
-                  const joinType = rel.join_type || rel.type || 'many_to_one';
-                  const hasConditions = rel.conditions && rel.conditions.length > 0;
-                  const hasSimpleColumns = rel.from_column && rel.to_column;
-
-                  return (
-                    <div key={idx} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-semibold text-lg">{rel.name || `Relationship ${idx + 1}`}</h3>
-                        <span className="text-xs bg-blue-100 px-2 py-1 rounded">
-                          {rel.id || `rel_${idx}`}
-                        </span>
-                      </div>
-                      {rel.description && <p className="text-sm text-gray-600 mb-3">{rel.description}</p>}
-
-                      <div className="bg-gray-50 p-3 rounded space-y-2 text-sm">
-                        {/* Dataset relationship flow */}
-                        <div className="flex items-center space-x-2">
-                          <span className="font-mono bg-blue-100 text-blue-800 px-2 py-1 rounded font-semibold">
-                            {leftDataset}
-                          </span>
-                          <span className="text-gray-600">
-                            <svg className="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                            </svg>
-                          </span>
-                          <span className="font-mono bg-purple-100 text-purple-800 px-2 py-1 rounded font-semibold">
-                            {rightDataset}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                          <span className="text-gray-600">Type:</span>
-                          <span className="font-semibold text-gray-900">
-                            {joinType.replace('_', ' ').toUpperCase()}
-                          </span>
-                        </div>
-
-                        {/* Conditions - structured format */}
-                        {hasConditions && (
-                          <>
-                            <div className="font-semibold mt-2 text-gray-700">Join Conditions:</div>
-                            {rel.conditions.map((cond: any, condIdx: number) => (
-                              <div key={condIdx} className="ml-4 bg-white p-2 rounded border border-gray-200">
-                                <span className="font-mono text-xs">
-                                  <span className="text-blue-600">{leftDataset}.{cond.left_column}</span>
-                                  {' '}<span className="text-gray-600">{cond.operator || '='}</span>{' '}
-                                  <span className="text-purple-600">{rightDataset}.{cond.right_column}</span>
-                                </span>
-                              </div>
-                            ))}
-                          </>
-                        )}
-
-                        {/* Simple format columns */}
-                        {!hasConditions && hasSimpleColumns && (
-                          <>
-                            <div className="font-semibold mt-2 text-gray-700">Join Condition:</div>
-                            <div className="ml-4 bg-white p-2 rounded border border-gray-200">
-                              <span className="font-mono text-xs">
-                                <span className="text-blue-600">{leftDataset}.{rel.from_column}</span>
-                                {' '}<span className="text-gray-600">=</span>{' '}
-                                <span className="text-purple-600">{rightDataset}.{rel.to_column}</span>
-                              </span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'metrics' && (
-          <div>
-            <h2 className="text-xl font-bold mb-4">Metrics</h2>
-            {!context.metrics || context.metrics.length === 0 ? (
-              <p className="text-gray-500">No metrics defined</p>
-            ) : (
-              <div className="space-y-4">
-                {context.metrics.map((metric, idx) => (
-                  <div key={idx} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h3 className="font-semibold text-lg">{metric.name}</h3>
-                        <p className="text-sm text-gray-600">ID: {metric.id}</p>
-                      </div>
-                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">{metric.data_type}</span>
-                    </div>
-                    {metric.description && <p className="text-gray-700 mb-3">{metric.description}</p>}
-                    <div className="bg-gray-50 p-3 rounded font-mono text-sm">
-                      {metric.expression}
-                    </div>
-                    {metric.format && (
-                      <div className="mt-2 text-sm text-gray-600">Format: {metric.format}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'glossary' && (
-          <div>
-            <h2 className="text-xl font-bold mb-4">Business Glossary</h2>
-            {!context.glossary || context.glossary.length === 0 ? (
-              <p className="text-gray-500">No glossary terms defined</p>
-            ) : (
-              <div className="space-y-4">
-                {context.glossary.map((entry, idx) => (
-                  <div key={idx} className="border border-gray-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-lg mb-2">{entry.term}</h3>
-                    <p className="text-gray-700 mb-3">{entry.definition}</p>
-                    {entry.synonyms && entry.synonyms.length > 0 && (
-                      <div className="text-sm mb-2">
-                        <strong>Synonyms:</strong> {entry.synonyms.join(', ')}
-                      </div>
-                    )}
-                    {entry.related_columns && entry.related_columns.length > 0 && (
-                      <div className="text-sm mb-2">
-                        <strong>Related Columns:</strong> {entry.related_columns.join(', ')}
-                      </div>
-                    )}
-                    {entry.examples && (
-                      <div className="text-sm bg-gray-50 p-2 rounded mt-2">
-                        <strong>Examples:</strong> {entry.examples}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'rules' && (
-          <div>
-            <h2 className="text-xl font-bold mb-4">Business Rules</h2>
-            {!context.business_rules || context.business_rules.length === 0 ? (
-              <p className="text-gray-500">No business rules defined</p>
-            ) : (
-              <div className="space-y-4">
-                {context.business_rules.map((rule, idx) => (
-                  <div key={idx} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold text-lg">{rule.name}</h3>
-                      <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                        rule.severity === 'error' ? 'bg-red-100 text-red-800' :
-                        rule.severity === 'warning' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-blue-100 text-blue-800'
-                      }`}>
-                        {rule.severity}
-                      </span>
-                    </div>
-                    <p className="text-gray-700 mb-3">{rule.description}</p>
-                    <div className="bg-gray-50 p-3 rounded space-y-2 text-sm">
-                      <div><strong>Type:</strong> {rule.rule_type}</div>
-                      <div><strong>Condition:</strong> <code className="font-mono text-xs">{rule.condition}</code></div>
-                      {rule.error_message && (
-                        <div><strong>Error Message:</strong> {rule.error_message}</div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'markdown' && (
-          <div>
-            <h2 className="text-xl font-bold mb-4">Documentation</h2>
+        {/* Documentation Tab */}
+        {activeTab === 'documentation' && (
+          <div className="p-6">
             <div className="prose max-w-none">
               <ReactMarkdown>{context.markdown_content}</ReactMarkdown>
             </div>

@@ -21,6 +21,10 @@ class User(Base):
     tableau_server_url = Column(String(512), nullable=True)
     tableau_credentials = Column(Text, nullable=True)  # Encrypted JSON
 
+    # Optional Kaggle credentials (encrypted)
+    kaggle_username = Column(String(255), nullable=True)
+    kaggle_key_encrypted = Column(Text, nullable=True)  # Encrypted API key
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

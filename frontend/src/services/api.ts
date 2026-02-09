@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios'
-import type { User, Token, Dataset, DatasetPreview, Query, QueryHistoryItem, Visualization, VizSuggestion, NLVizResponse } from '../types'
+import type { User, Token, Dataset, DatasetPreview, Query, QueryHistoryItem, Visualization, VizSuggestion, NLVizResponse, SmartImportResponse, SmartImportContextResult, SupportedPlatforms, KaggleImportResponse, ContextChatRequest, ContextChatResponse, DatasetDeleteInfo, DatasetDeleteResult, KaggleCredentials } from '../types'
 
 const api = axios.create({
   baseURL: '/api',
@@ -74,6 +74,23 @@ export const authAPI = {
     const { data } = await api.get<User>('/auth/me')
     return data
   },
+
+  getKaggleCredentials: async () => {
+    const { data } = await api.get<KaggleCredentials>('/auth/kaggle-credentials')
+    return data
+  },
+
+  saveKaggleCredentials: async (kaggle_username: string, kaggle_key: string) => {
+    const { data } = await api.post<KaggleCredentials>('/auth/kaggle-credentials', {
+      kaggle_username,
+      kaggle_key,
+    })
+    return data
+  },
+
+  deleteKaggleCredentials: async () => {
+    await api.delete('/auth/kaggle-credentials')
+  },
 }
 
 // Dataset API
@@ -122,8 +139,23 @@ export const datasetAPI = {
     return data
   },
 
-  delete: async (id: string) => {
-    await api.delete(`/datasets/${id}`)
+  getDeleteInfo: async (id: string) => {
+    const { data } = await api.get<DatasetDeleteInfo>(`/datasets/${id}/delete-info`)
+    return data
+  },
+
+  delete: async (
+    id: string,
+    options: { deleteContext?: boolean; deleteLinkedDatasets?: boolean } = {}
+  ) => {
+    const { deleteContext = true, deleteLinkedDatasets = false } = options
+    const { data } = await api.delete<DatasetDeleteResult>(`/datasets/${id}`, {
+      params: {
+        delete_context: deleteContext,
+        delete_linked_datasets: deleteLinkedDatasets,
+      },
+    })
+    return data
   },
 }
 
@@ -211,6 +243,76 @@ export const visualizationAPI = {
       description,
       name,
     })
+    return data
+  },
+}
+
+// Smart Import API
+export const smartImportAPI = {
+  analyzeUrl: async (url: string, dataset_name?: string) => {
+    const { data} = await api.post<SmartImportResponse>('/smart-import/analyze-url', {
+      url,
+      dataset_name,
+    })
+    return data
+  },
+
+  createContextFromUrl: async (url: string, dataset_name?: string) => {
+    const { data } = await api.post<SmartImportContextResult>('/smart-import/create-context-from-url', {
+      url,
+      dataset_name,
+    })
+    return data
+  },
+
+  getSupportedPlatforms: async () => {
+    const { data } = await api.get<SupportedPlatforms>('/smart-import/supported-platforms')
+    return data
+  },
+
+  importFromKaggle: async (
+    url: string,
+    dataset_name: string,
+    options: {
+      kaggle_username?: string
+      kaggle_key?: string
+      create_context?: boolean
+      save_credentials?: boolean
+    } = {}
+  ) => {
+    const { data } = await api.post<KaggleImportResponse>('/smart-import/import-from-kaggle', {
+      url,
+      dataset_name,
+      kaggle_username: options.kaggle_username,
+      kaggle_key: options.kaggle_key,
+      create_context: options.create_context ?? true,
+      save_credentials: options.save_credentials ?? false,
+    })
+    return data
+  },
+
+  validateKaggleCredentials: async (kaggle_username: string, kaggle_key: string) => {
+    const { data } = await api.post('/smart-import/validate-kaggle-credentials', null, {
+      params: { kaggle_username, kaggle_key }
+    })
+    return data
+  },
+}
+
+// Context Chat API
+export const contextChatAPI = {
+  askQuestion: async (request: ContextChatRequest) => {
+    const { data } = await api.post<ContextChatResponse>('/context-chat/ask', request)
+    return data
+  },
+
+  getSummary: async (context_id: string) => {
+    const { data } = await api.get(`/context-chat/${context_id}/summary`)
+    return data
+  },
+
+  getTopics: async (context_id: string) => {
+    const { data } = await api.get(`/context-chat/${context_id}/topics`)
     return data
   },
 }

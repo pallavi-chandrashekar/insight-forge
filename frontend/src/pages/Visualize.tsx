@@ -4,7 +4,7 @@ import type { Dataset, VizSuggestion, ChartType } from '../types'
 import Plot from 'react-plotly.js'
 import {
   BarChart3, Sparkles, Wand2, LineChart, ScatterChart,
-  PieChart, BarChart, TrendingUp, Grid, Box, Activity,
+  PieChart, BarChart, Grid, Box, Activity,
   Download, Save, Trash2, Eye, MessageSquare
 } from 'lucide-react'
 

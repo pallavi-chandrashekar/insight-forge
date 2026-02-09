@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { datasetAPI, queryAPI } from '../services/api'
 import type { Dataset, Query as QueryType } from '../types'
-import { Search, Code, Database } from 'lucide-react'
+import { Search, Code } from 'lucide-react'
 
 export default function Query() {
   const [datasets, setDatasets] = useState<Dataset[]>([])
