@@ -18,12 +18,12 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # Database
-    DATABASE_URL: str
+    DATABASE_URL: str = "sqlite+aiosqlite:///./insightforge.db"
     DATABASE_POOL_SIZE: int = 5
     DATABASE_MAX_OVERFLOW: int = 10
 
     # Security
-    SECRET_KEY: str
+    SECRET_KEY: str = "insightforge-default-secret-change-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     LLM_MAX_TOKENS: int = 4096
 
     # Free tier fallback (Google Gemini)
-    GEMINI_FREE_API_KEY: str = ""  # Optional: Gemini API key for free tier fallback
+    GEMINI_FREE_API_KEY: str = "AIzaSyAT2k1WZsx7qWo039jlm2R6eZ8CgN7FxkE"  # Free tier Gemini API key
     GEMINI_FREE_MODEL: str = "gemini-1.5-flash"  # Fast, free model
 
     # Redis
