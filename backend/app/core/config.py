@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     LLM_MAX_TOKENS: int = 4096
 
     # Free tier fallback (Google Gemini)
-    GEMINI_FREE_API_KEY: str = "AIzaSyAT2k1WZsx7qWo039jlm2R6eZ8CgN7FxkE"  # Free tier Gemini API key
+    GEMINI_FREE_API_KEY: str = ""  # Set via environment variable
     GEMINI_FREE_MODEL: str = "gemini-1.5-flash"  # Fast, free model
 
     # Redis
