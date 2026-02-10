@@ -890,13 +890,13 @@ Content-Type: multipart/form-data  OR  application/json
 ```bash
 # Upload file
 curl -X POST https://api.insightforge.com/api/contexts \
-  -H "Authorization: Bearer eyJhbGc..." \
+  -H "Authorization: Bearer <YOUR_ACCESS_TOKEN>" \
   -F "file=@ecommerce_context.md" \
   -F "validate_datasets=true"
 
 # JSON payload
 curl -X POST https://api.insightforge.com/api/contexts \
-  -H "Authorization: Bearer eyJhbGc..." \
+  -H "Authorization: Bearer <YOUR_ACCESS_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
     "name": "ecommerce_basic",
@@ -991,7 +991,7 @@ curl -X POST https://api.insightforge.com/api/contexts \
 **Example curl**:
 ```bash
 curl -X GET https://api.insightforge.com/api/contexts/f1a2b3c4-d5e6-4f5a-6b7c-8d9e0f1a2b3c \
-  -H "Authorization: Bearer eyJhbGc..." \
+  -H "Authorization: Bearer <YOUR_ACCESS_TOKEN>" \
   -G -d "include_markdown=true" -d "resolve_datasets=true"
 ```
 
@@ -1042,7 +1042,7 @@ curl -X GET https://api.insightforge.com/api/contexts/f1a2b3c4-d5e6-4f5a-6b7c-8d
 **Example curl**:
 ```bash
 curl -X GET https://api.insightforge.com/api/contexts \
-  -H "Authorization: Bearer eyJhbGc..." \
+  -H "Authorization: Bearer <YOUR_ACCESS_TOKEN>" \
   -G -d "page=1" -d "page_size=20" -d "search=ecommerce"
 ```
 
@@ -1095,7 +1095,7 @@ curl -X GET https://api.insightforge.com/api/contexts \
 **Example curl**:
 ```bash
 curl -X PUT https://api.insightforge.com/api/contexts/f1a2b3c4-d5e6-4f5a-6b7c-8d9e0f1a2b3c \
-  -H "Authorization: Bearer eyJhbGc..." \
+  -H "Authorization: Bearer <YOUR_ACCESS_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
     "content": "...",
@@ -1142,7 +1142,7 @@ curl -X PUT https://api.insightforge.com/api/contexts/f1a2b3c4-d5e6-4f5a-6b7c-8d
 **Example curl**:
 ```bash
 curl -X DELETE https://api.insightforge.com/api/contexts/f1a2b3c4-d5e6-4f5a-6b7c-8d9e0f1a2b3c \
-  -H "Authorization: Bearer eyJhbGc..."
+  -H "Authorization: Bearer <YOUR_ACCESS_TOKEN>"
 ```
 
 ### 3.6 Validate Context
@@ -1230,7 +1230,7 @@ curl -X DELETE https://api.insightforge.com/api/contexts/f1a2b3c4-d5e6-4f5a-6b7c
 **Example curl**:
 ```bash
 curl -X POST https://api.insightforge.com/api/contexts/validate \
-  -H "Authorization: Bearer eyJhbGc..." \
+  -H "Authorization: Bearer <YOUR_ACCESS_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
     "content": "---\nname: test\nversion: 1.0.0\n...",
@@ -1292,7 +1292,7 @@ curl -X POST https://api.insightforge.com/api/contexts/validate \
 **Example curl**:
 ```bash
 curl -X GET https://api.insightforge.com/api/contexts/f1a2b3c4-d5e6-4f5a-6b7c-8d9e0f1a2b3c/relationships \
-  -H "Authorization: Bearer eyJhbGc..."
+  -H "Authorization: Bearer <YOUR_ACCESS_TOKEN>"
 ```
 
 ### 3.8 Get Metrics
@@ -1333,7 +1333,7 @@ curl -X GET https://api.insightforge.com/api/contexts/f1a2b3c4-d5e6-4f5a-6b7c-8d
 **Example curl**:
 ```bash
 curl -X GET https://api.insightforge.com/api/contexts/f1a2b3c4-d5e6-4f5a-6b7c-8d9e0f1a2b3c/metrics \
-  -H "Authorization: Bearer eyJhbGc..."
+  -H "Authorization: Bearer <YOUR_ACCESS_TOKEN>"
 ```
 
 ### 3.9 Export Context
@@ -1364,7 +1364,7 @@ version: 1.0.0
 **Example curl**:
 ```bash
 curl -X GET https://api.insightforge.com/api/contexts/f1a2b3c4-d5e6-4f5a-6b7c-8d9e0f1a2b3c/export \
-  -H "Authorization: Bearer eyJhbGc..." \
+  -H "Authorization: Bearer <YOUR_ACCESS_TOKEN>" \
   -o ecommerce_context.md
 ```
 

@@ -1,0 +1,36 @@
+# Gitleaks configuration for InsightForge
+# Exclude false positives from documentation files
+
+title = "InsightForge Gitleaks Config"
+
+[extend]
+# Use the default gitleaks config as base
+useDefault = true
+
+# Allowlist rules for documentation examples
+[[allowlist.paths]]
+# Documentation files with example tokens
+paths = [
+    '''docs/tests/.*\.md''',
+    '''docs/features/.*\.md''',
+    '''docs/api/.*\.md''',
+]
+description = "Documentation files with example tokens"
+
+[[allowlist.regexes]]
+# Example Bearer tokens in curl commands (documentation)
+regexes = [
+    '''Bearer\s+eyJ[A-Za-z0-9_-]*\.eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*''',
+]
+description = "Example JWT tokens in documentation"
+
+[[allowlist.commits]]
+# Allow specific patterns that are clearly examples
+description = "Documentation example tokens"
+
+# Rules to ignore specific false positives
+[[rules]]
+id = "documentation-example-tokens"
+description = "Ignore example tokens in documentation"
+regex = '''"(access_token|refresh_token)":\s*"[^"]*"'''
+allowlist = { paths = ['''docs/.*\.md'''] }

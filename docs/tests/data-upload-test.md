@@ -100,8 +100,8 @@ POST /api/auth/login
 **Response:**
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "access_token": "<JWT_ACCESS_TOKEN>",
+  "refresh_token": "<JWT_REFRESH_TOKEN>",
   "token_type": "bearer"
 }
 ```

@@ -272,7 +272,7 @@ Content-Type: application/json
 **Example curl**:
 ```bash
 curl -X POST https://api.insightforge.com/api/queries/execute \
-  -H "Authorization: Bearer eyJhbGc..." \
+  -H "Authorization: Bearer <YOUR_ACCESS_TOKEN>" \
   -H "Content-Type: application/json" \
   -d '{
     "query_type": "natural_language",
