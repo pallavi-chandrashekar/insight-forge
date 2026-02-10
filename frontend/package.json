@@ -13,7 +13,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.21.1",
-    "axios": "^1.6.5",
+    "axios": "^1.13.5",
     "zustand": "^4.4.7",
     "plotly.js": "^2.27.1",
     "react-plotly.js": "^2.6.0",
