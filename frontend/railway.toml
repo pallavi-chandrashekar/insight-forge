@@ -2,6 +2,6 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "npx serve -s dist -l ${PORT:-3000}"
+startCommand = "PORT=${PORT:-3000} && npx serve -s dist -p $PORT"
 healthcheckPath = "/"
 healthcheckTimeout = 300
