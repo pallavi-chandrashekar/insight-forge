@@ -24,7 +24,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: API_KEY
-        sync: false  # Set manually in Render dashboard (Anthropic API key)
+        value: ""  # Optional - users provide their own keys via Settings page
       - key: ENVIRONMENT
         value: production
       - key: DEBUG

@@ -1,28 +1,186 @@
 import json
 from typing import Any, Optional
-
-from anthropic import AsyncAnthropic
+from abc import ABC, abstractmethod
 
 from app.core.config import settings
 
 
-class LLMService:
-    """Service for LLM-powered features"""
+class BaseLLMProvider(ABC):
+    """Abstract base class for LLM providers"""
 
-    def __init__(self):
-        self.client = AsyncAnthropic(api_key=settings.API_KEY)
-        self.model = settings.LLM_MODEL
-        self.max_tokens = settings.LLM_MAX_TOKENS
+    @abstractmethod
+    async def generate(self, system_prompt: str, user_prompt: str, max_tokens: int = 4096) -> str:
+        """Generate a response from the LLM"""
+        pass
 
-    async def _call_claude(self, system_prompt: str, user_prompt: str) -> str:
-        """Make a call to Claude API"""
+    @abstractmethod
+    async def chat(self, messages: list[dict[str, str]], max_tokens: int = 4096) -> str:
+        """Chat with message history"""
+        pass
+
+
+class AnthropicProvider(BaseLLMProvider):
+    """Anthropic Claude provider"""
+
+    def __init__(self, api_key: str, model: str = "claude-sonnet-4-20250514"):
+        from anthropic import AsyncAnthropic
+        self.client = AsyncAnthropic(api_key=api_key)
+        self.model = model
+
+    async def generate(self, system_prompt: str, user_prompt: str, max_tokens: int = 4096) -> str:
         response = await self.client.messages.create(
             model=self.model,
-            max_tokens=self.max_tokens,
+            max_tokens=max_tokens,
             system=system_prompt,
             messages=[{"role": "user", "content": user_prompt}],
         )
         return response.content[0].text
+
+    async def chat(self, messages: list[dict[str, str]], max_tokens: int = 4096) -> str:
+        system_message = None
+        user_messages = []
+
+        for msg in messages:
+            if msg.get('role') == 'system':
+                system_message = msg.get('content', '')
+            else:
+                user_messages.append({
+                    'role': msg.get('role', 'user'),
+                    'content': msg.get('content', '')
+                })
+
+        response = await self.client.messages.create(
+            model=self.model,
+            max_tokens=max_tokens,
+            system=system_message if system_message else "",
+            messages=user_messages,
+        )
+        return response.content[0].text
+
+
+class OpenAIProvider(BaseLLMProvider):
+    """OpenAI GPT provider"""
+
+    def __init__(self, api_key: str, model: str = "gpt-4o"):
+        from openai import AsyncOpenAI
+        self.client = AsyncOpenAI(api_key=api_key)
+        self.model = model
+
+    async def generate(self, system_prompt: str, user_prompt: str, max_tokens: int = 4096) -> str:
+        response = await self.client.chat.completions.create(
+            model=self.model,
+            max_tokens=max_tokens,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+        )
+        return response.choices[0].message.content
+
+    async def chat(self, messages: list[dict[str, str]], max_tokens: int = 4096) -> str:
+        response = await self.client.chat.completions.create(
+            model=self.model,
+            max_tokens=max_tokens,
+            messages=messages,
+        )
+        return response.choices[0].message.content
+
+
+class GoogleProvider(BaseLLMProvider):
+    """Google Gemini provider"""
+
+    def __init__(self, api_key: str, model: str = "gemini-1.5-flash"):
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        self.model = genai.GenerativeModel(model)
+
+    async def generate(self, system_prompt: str, user_prompt: str, max_tokens: int = 4096) -> str:
+        # Gemini combines system and user prompts
+        full_prompt = f"{system_prompt}\n\n{user_prompt}"
+        response = await self.model.generate_content_async(
+            full_prompt,
+            generation_config={"max_output_tokens": max_tokens}
+        )
+        return response.text
+
+    async def chat(self, messages: list[dict[str, str]], max_tokens: int = 4096) -> str:
+        # Convert messages to Gemini format
+        gemini_messages = []
+        system_content = ""
+
+        for msg in messages:
+            if msg.get('role') == 'system':
+                system_content = msg.get('content', '')
+            elif msg.get('role') == 'user':
+                content = msg.get('content', '')
+                if system_content and not gemini_messages:
+                    content = f"{system_content}\n\n{content}"
+                gemini_messages.append({"role": "user", "parts": [content]})
+            elif msg.get('role') == 'assistant':
+                gemini_messages.append({"role": "model", "parts": [msg.get('content', '')]})
+
+        chat = self.model.start_chat(history=gemini_messages[:-1] if len(gemini_messages) > 1 else [])
+        response = await chat.send_message_async(
+            gemini_messages[-1]["parts"][0] if gemini_messages else "",
+            generation_config={"max_output_tokens": max_tokens}
+        )
+        return response.text
+
+
+def get_llm_provider(provider: str, api_key: str) -> BaseLLMProvider:
+    """Factory function to get the appropriate LLM provider"""
+    providers = {
+        'anthropic': AnthropicProvider,
+        'openai': OpenAIProvider,
+        'google': GoogleProvider,
+    }
+
+    if provider not in providers:
+        raise ValueError(f"Unsupported provider: {provider}. Supported: {list(providers.keys())}")
+
+    return providers[provider](api_key=api_key)
+
+
+class LLMService:
+    """Service for LLM-powered features with multi-provider support"""
+
+    def __init__(self, provider: Optional[str] = None, api_key: Optional[str] = None):
+        """
+        Initialize LLM service.
+
+        Args:
+            provider: 'anthropic', 'openai', or 'google'
+            api_key: User's API key for the provider
+
+        If not provided, falls back to app-level settings (if configured).
+        """
+        self.provider_name = provider
+        self.api_key = api_key
+        self._provider: Optional[BaseLLMProvider] = None
+        self.max_tokens = settings.LLM_MAX_TOKENS
+
+    def _get_provider(self) -> BaseLLMProvider:
+        """Get or create the LLM provider"""
+        if self._provider is None:
+            if not self.api_key:
+                # Try fallback to app-level key (for backward compatibility)
+                if hasattr(settings, 'API_KEY') and settings.API_KEY:
+                    self._provider = AnthropicProvider(
+                        api_key=settings.API_KEY,
+                        model=settings.LLM_MODEL
+                    )
+                else:
+                    raise ValueError(
+                        "No API key configured. Please configure your LLM API key in Settings."
+                    )
+            else:
+                self._provider = get_llm_provider(self.provider_name, self.api_key)
+        return self._provider
+
+    async def _call_llm(self, system_prompt: str, user_prompt: str) -> str:
+        """Make a call to the LLM"""
+        provider = self._get_provider()
+        return await provider.generate(system_prompt, user_prompt, self.max_tokens)
 
     async def generate_sql_query(self, question: str, schema: dict[str, Any]) -> str:
         """Generate SQL query from natural language question"""
@@ -45,7 +203,7 @@ Question: {question}
 
 Generate a SQL query to answer this question. Only return the SQL query, no explanation."""
 
-        response = await self._call_claude(system_prompt, user_prompt)
+        response = await self._call_llm(system_prompt, user_prompt)
         query = response.strip()
         if query.startswith("```sql"):
             query = query[6:]
@@ -80,7 +238,7 @@ Question: {question}
 
 Generate pandas operations to answer this question. Only return the JSON array."""
 
-        response = await self._call_claude(system_prompt, user_prompt)
+        response = await self._call_llm(system_prompt, user_prompt)
         response = response.strip()
         if response.startswith("```json"):
             response = response[7:]
@@ -122,7 +280,7 @@ Sample data:
 
 Suggest appropriate visualizations for this data."""
 
-        response = await self._call_claude(system_prompt, user_prompt)
+        response = await self._call_llm(system_prompt, user_prompt)
         response = response.strip()
         if response.startswith("```json"):
             response = response[7:]
@@ -140,29 +298,7 @@ Suggest appropriate visualizations for this data."""
         sample_data: list[dict[str, Any]],
         context_metadata: Optional[dict[str, Any]] = None,
     ) -> dict[str, Any]:
-        """
-        Generate a complete visualization configuration from natural language.
-
-        Args:
-            description: User's natural language description
-            schema: Dataset schema with column info
-            sample_data: Sample rows for context
-
-        Returns:
-            {
-                "chart_type": "bar",
-                "title": "Average Screen Time by Age Group",
-                "config": {
-                    "x_column": "age_group",
-                    "y_column": "screen_time",
-                    "aggregation": "mean"
-                },
-                "reasoning": "User requested average, which maps to mean aggregation..."
-            }
-
-        Raises:
-            ValueError: If description cannot be parsed
-        """
+        """Generate a complete visualization configuration from natural language."""
         context_section = ""
         if context_metadata:
             context_section = self._format_context_for_prompt(context_metadata)
@@ -233,7 +369,7 @@ User request: "{description}"
 
 Parse this into a visualization configuration."""
 
-        response = await self._call_claude(system_prompt, user_prompt)
+        response = await self._call_llm(system_prompt, user_prompt)
 
         # Clean markdown
         response = response.strip()
@@ -246,11 +382,9 @@ Parse this into a visualization configuration."""
 
         parsed = json.loads(response.strip())
 
-        # Check for error response from LLM
         if "error" in parsed:
             raise ValueError(parsed["error"])
 
-        # Validate required fields
         if "chart_type" not in parsed or "config" not in parsed:
             raise ValueError("Could not determine chart type and columns from description")
 
@@ -273,7 +407,7 @@ Return 3-5 insights. Only return valid JSON array of strings."""
 
 Generate key insights about this data."""
 
-        response = await self._call_claude(system_prompt, user_prompt)
+        response = await self._call_llm(system_prompt, user_prompt)
         response = response.strip()
         if response.startswith("```json"):
             response = response[7:]
@@ -295,26 +429,16 @@ Generate key insights about this data."""
         return "\n".join(lines)
 
     def _format_context_for_prompt(self, context_metadata: dict[str, Any]) -> str:
-        """
-        Format context metadata into readable sections for LLM.
-
-        Args:
-            context_metadata: Dictionary with business context
-
-        Returns:
-            Formatted string with context sections
-        """
+        """Format context metadata into readable sections for LLM."""
         if not context_metadata:
             return ""
 
         sections = []
 
-        # Dataset description
         if context_metadata.get("description"):
             sections.append(f"Dataset: {context_metadata['name']}")
             sections.append(f"Description: {context_metadata['description']}\n")
 
-        # Column business names and descriptions
         columns = context_metadata.get("columns", [])
         if columns:
             sections.append("COLUMN METADATA:")
@@ -327,7 +451,6 @@ Generate key insights about this data."""
                 sections.append(col_line)
             sections.append("")
 
-        # Pre-defined metrics
         metrics = context_metadata.get("metrics", [])
         if metrics:
             sections.append("PRE-DEFINED METRICS:")
@@ -340,7 +463,6 @@ Generate key insights about this data."""
                 sections.append(metric_line)
             sections.append("")
 
-        # Glossary terms
         glossary = context_metadata.get("glossary", [])
         if glossary:
             sections.append("GLOSSARY TERMS:")
@@ -353,7 +475,6 @@ Generate key insights about this data."""
                 sections.append(term_line)
             sections.append("")
 
-        # Available filters
         filters = context_metadata.get("filters", [])
         if filters:
             sections.append("AVAILABLE FILTERS:")
@@ -371,17 +492,7 @@ Generate key insights about this data."""
         question: str,
         context: dict[str, Any]
     ) -> dict[str, Any]:
-        """
-        Analyze a natural language question to determine which datasets,
-        metrics, and filters are needed.
-
-        Args:
-            question: Natural language question
-            context: Parsed context dictionary
-
-        Returns:
-            Analysis with required datasets, metrics, filters
-        """
+        """Analyze a natural language question to determine which datasets, metrics, and filters are needed."""
         system_prompt = """You are a data analysis expert. Analyze the user's question and determine:
 1. Which datasets are needed
 2. Which metrics (if any) should be calculated
@@ -399,7 +510,6 @@ Return a JSON object with:
 
 Only return valid JSON, no explanation outside the object."""
 
-        # Format context info
         datasets_info = []
         for ds in context.get('datasets', []):
             ds_info = f"- {ds['id']}: {ds['name']}"
@@ -430,7 +540,7 @@ User question: {question}
 
 Analyze what's needed to answer this question."""
 
-        response = await self._call_claude(system_prompt, user_prompt)
+        response = await self._call_llm(system_prompt, user_prompt)
         response = response.strip()
         if response.startswith("```json"):
             response = response[7:]
@@ -448,18 +558,7 @@ Analyze what's needed to answer this question."""
         context: dict[str, Any],
         dataset_id: str
     ) -> str:
-        """
-        Generate SQL query using context metadata.
-
-        Args:
-            question: Natural language question
-            schema: Dataset schema
-            context: Context definition
-            dataset_id: Target dataset ID
-
-        Returns:
-            Generated SQL query
-        """
+        """Generate SQL query using context metadata."""
         system_prompt = """You are a SQL expert with access to rich dataset metadata.
 Generate SQL queries based on user questions, using the provided context for guidance.
 
@@ -472,14 +571,12 @@ IMPORTANT RULES:
 6. Only use SELECT statements
 7. The table name is 'df'"""
 
-        # Find dataset in context
         dataset_info = None
         for ds in context.get('datasets', []):
             if ds['id'] == dataset_id:
                 dataset_info = ds
                 break
 
-        # Format enhanced schema with business metadata
         schema_lines = []
         if dataset_info and dataset_info.get('columns'):
             for col in dataset_info['columns']:
@@ -492,7 +589,6 @@ IMPORTANT RULES:
         else:
             schema_lines = [self._format_schema(schema)]
 
-        # Include relevant metrics
         metrics_lines = []
         for metric in context.get('metrics', []):
             if not metric.get('datasets') or dataset_id in metric.get('datasets', []):
@@ -508,7 +604,7 @@ User question: {question}
 
 Generate a SQL query to answer this question."""
 
-        response = await self._call_claude(system_prompt, user_prompt)
+        response = await self._call_llm(system_prompt, user_prompt)
         query = response.strip()
         if query.startswith("```sql"):
             query = query[6:]
@@ -519,79 +615,23 @@ Generate a SQL query to answer this question."""
         return query.strip()
 
     async def chat(self, messages: list[dict[str, str]], max_tokens: Optional[int] = None) -> str:
-        """
-        Chat with Claude using a message history.
-
-        Args:
-            messages: List of message dicts with 'role' and 'content'
-                     First message should be 'system' role
-            max_tokens: Optional override for max tokens (default: uses config value)
-
-        Returns:
-            Assistant's response text
-        """
-        # Extract system message if present
-        system_message = None
-        user_messages = []
-
-        for msg in messages:
-            if msg.get('role') == 'system':
-                system_message = msg.get('content', '')
-            else:
-                user_messages.append({
-                    'role': msg.get('role', 'user'),
-                    'content': msg.get('content', '')
-                })
-
-        # Make API call
-        response = await self.client.messages.create(
-            model=self.model,
-            max_tokens=max_tokens if max_tokens else self.max_tokens,
-            system=system_message if system_message else "",
-            messages=user_messages,
-        )
-
-        return response.content[0].text
+        """Chat with the LLM using a message history."""
+        provider = self._get_provider()
+        return await provider.chat(messages, max_tokens if max_tokens else self.max_tokens)
 
     async def generate_text(self, prompt: str) -> str:
-        """
-        Generate text from a simple prompt.
-
-        Args:
-            prompt: Text prompt
-
-        Returns:
-            Generated text
-        """
-        response = await self.client.messages.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            messages=[{"role": "user", "content": prompt}],
-        )
-
-        return response.content[0].text
+        """Generate text from a simple prompt."""
+        return await self._call_llm("", prompt)
 
     async def generate_structured_output(self, prompt: str, output_format: str = "json") -> str:
-        """
-        Generate structured output (JSON, etc.) from a prompt.
-
-        Args:
-            prompt: Text prompt
-            output_format: Format type (default: "json")
-
-        Returns:
-            Generated structured output as string
-        """
+        """Generate structured output (JSON, etc.) from a prompt."""
         enhanced_prompt = f"""{prompt}
 
 IMPORTANT: Return ONLY valid {output_format.upper()}, no additional text or explanation."""
 
         response = await self.generate_text(enhanced_prompt)
 
-        # Clean up response
         cleaned = response.strip()
-
-        # Remove markdown code blocks if present
         if cleaned.startswith(f"```{output_format}"):
             cleaned = cleaned[len(f"```{output_format}"):].strip()
         elif cleaned.startswith("```"):

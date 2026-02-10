@@ -1,9 +1,0 @@
-customer_id,customer_name,email,city,country
-101,Alice Johnson,alice@example.com,New York,USA
-102,Bob Smith,bob@example.com,San Francisco,USA
-103,Charlie Brown,charlie@example.com,Chicago,USA
-104,David Lee,david@example.com,Boston,USA
-105,Eve Martinez,eve@example.com,Seattle,USA
-106,Frank Wilson,frank@example.com,Austin,USA
-107,Grace Kim,grace@example.com,Denver,USA
-108,Henry Chen,henry@example.com,Portland,USA

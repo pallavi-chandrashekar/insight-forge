@@ -208,3 +208,16 @@ __marimo__/
 
 
 .nodes
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# User uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Credentials
+*.pem
+*.key
+credentials.json

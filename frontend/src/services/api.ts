@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios'
-import type { User, Token, Dataset, DatasetPreview, Query, QueryHistoryItem, Visualization, VizSuggestion, NLVizResponse, SmartImportResponse, SmartImportContextResult, SupportedPlatforms, KaggleImportResponse, ContextChatRequest, ContextChatResponse, DatasetDeleteInfo, DatasetDeleteResult, KaggleCredentials } from '../types'
+import type { User, Token, Dataset, DatasetPreview, Query, QueryHistoryItem, Visualization, VizSuggestion, NLVizResponse, SmartImportResponse, SmartImportContextResult, SupportedPlatforms, KaggleImportResponse, ContextChatRequest, ContextChatResponse, DatasetDeleteInfo, DatasetDeleteResult, KaggleCredentials, LLMSettings, LLMProvider } from '../types'
 
 // Use environment variable for API URL, fallback to /api for local dev
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
@@ -93,6 +93,29 @@ export const authAPI = {
 
   deleteKaggleCredentials: async () => {
     await api.delete('/auth/kaggle-credentials')
+  },
+
+  // LLM Settings
+  getLLMSettings: async () => {
+    const { data } = await api.get<LLMSettings>('/auth/llm-settings')
+    return data
+  },
+
+  saveLLMSettings: async (provider: string, api_key: string) => {
+    const { data } = await api.post<LLMSettings>('/auth/llm-settings', {
+      provider,
+      api_key,
+    })
+    return data
+  },
+
+  deleteLLMSettings: async () => {
+    await api.delete('/auth/llm-settings')
+  },
+
+  getLLMProviders: async () => {
+    const { data } = await api.get<{ providers: LLMProvider[] }>('/auth/llm-providers')
+    return data.providers
   },
 }
 

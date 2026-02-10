@@ -12,7 +12,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.user import User
 from app.services.context_service import ContextService
-from app.services.llm_service import LLMService
+from app.services.llm_helpers import get_user_llm_service
 from app.services.question_classifier import QuestionClassifier
 from app.services.chat_cache import get_chat_cache
 from app.services.source_extractor import SourceExtractor
@@ -84,7 +84,7 @@ async def ask_context_question(
         return ContextChatResponse(**cached_response)
 
     # Get LLM service
-    llm_service = LLMService()
+    llm_service = get_user_llm_service(current_user)
 
     # Build conversation history
     conversation = request.conversation_history or []
@@ -263,7 +263,7 @@ async def get_context_summary(
         )
 
     # Generate summary
-    llm_service = LLMService()
+    llm_service = get_user_llm_service(current_user)
 
     summary_prompt = f"""Analyze this documentation and provide a structured summary:
 

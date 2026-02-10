@@ -10,7 +10,7 @@ from app.models.query import Query
 from app.schemas.visualization import VizRequest, VizResponse, VizSuggestion, NLVizRequest, NLVizResponse
 from app.services.data_service import DataService
 from app.services.visualization_service import VisualizationService
-from app.services.llm_service import LLMService
+from app.services.llm_helpers import get_user_llm_service
 from app.services.context_service import ContextService
 
 
@@ -123,7 +123,7 @@ async def suggest_visualizations(
 
     # Get suggestions from LLM
     try:
-        llm_service = LLMService()
+        llm_service = get_user_llm_service(current_user)
         suggestions = await llm_service.suggest_visualizations(
             schema=dataset.schema,
             sample_data=sample_data,
@@ -196,7 +196,7 @@ async def generate_from_natural_language(
 
     # Parse natural language
     try:
-        llm_service = LLMService()
+        llm_service = get_user_llm_service(current_user)
         parsed_config = await llm_service.generate_visualization_from_nl(
             description=request.description,
             schema=dataset.schema,

@@ -13,6 +13,7 @@ import Contexts from './pages/Contexts'
 import ContextDetail from './pages/ContextDetail'
 import ContextCreate from './pages/ContextCreate'
 import Chat from './pages/Chat'
+import Settings from './pages/Settings'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore()
@@ -60,6 +61,7 @@ function App() {
           <Route path="contexts/new" element={<ContextCreate />} />
           <Route path="contexts/:id" element={<ContextDetail />} />
           <Route path="chat" element={<Chat />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     </BrowserRouter>

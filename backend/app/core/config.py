@@ -42,9 +42,9 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "./uploads"
     MAX_UPLOAD_SIZE: int = 100  # MB
 
-    # LLM
-    API_KEY: str
-    LLM_MODEL: str = "claude-sonnet-4-5-20250929"
+    # LLM (Optional - users provide their own keys)
+    API_KEY: str = ""  # Optional fallback key; users configure their own in Settings
+    LLM_MODEL: str = "claude-sonnet-4-20250514"
     LLM_MAX_TOKENS: int = 4096
 
     # Redis

@@ -31,6 +31,17 @@ class KaggleCredentialsResponse(BaseModel):
     is_valid: Optional[bool] = None
 
 
+class LLMSettingsRequest(BaseModel):
+    provider: str  # 'openai', 'anthropic', 'google'
+    api_key: str
+
+
+class LLMSettingsResponse(BaseModel):
+    has_settings: bool
+    provider: Optional[str] = None
+    is_configured: bool = False
+
+
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     user_data: UserCreate,
@@ -166,3 +177,104 @@ async def delete_kaggle_credentials(
     await db.commit()
 
     return {"message": "Kaggle credentials removed"}
+
+
+# LLM Settings endpoints
+@router.get("/llm-settings", response_model=LLMSettingsResponse)
+async def get_llm_settings(
+    current_user: User = Depends(get_current_user),
+):
+    """Get user's LLM API settings"""
+    has_settings = bool(
+        current_user.llm_provider and current_user.llm_api_key_encrypted
+    )
+
+    return LLMSettingsResponse(
+        has_settings=has_settings,
+        provider=current_user.llm_provider if has_settings else None,
+        is_configured=has_settings
+    )
+
+
+@router.post("/llm-settings", response_model=LLMSettingsResponse)
+async def save_llm_settings(
+    settings: LLMSettingsRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Save LLM API settings for the user"""
+    # Validate provider
+    valid_providers = ['openai', 'anthropic', 'google']
+    if settings.provider not in valid_providers:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid provider. Must be one of: {valid_providers}"
+        )
+
+    # Validate API key by making a test call
+    try:
+        from app.services.llm_service import get_llm_provider
+        provider = get_llm_provider(settings.provider, settings.api_key)
+        # Simple validation - just check if provider initializes
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid API key: {str(e)}"
+        )
+
+    # Encrypt and save
+    current_user.llm_provider = settings.provider
+    current_user.llm_api_key_encrypted = encrypt_value(settings.api_key)
+
+    await db.commit()
+    await db.refresh(current_user)
+
+    return LLMSettingsResponse(
+        has_settings=True,
+        provider=current_user.llm_provider,
+        is_configured=True
+    )
+
+
+@router.delete("/llm-settings")
+async def delete_llm_settings(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove stored LLM API settings"""
+    current_user.llm_provider = None
+    current_user.llm_api_key_encrypted = None
+
+    await db.commit()
+
+    return {"message": "LLM settings removed"}
+
+
+@router.get("/llm-providers")
+async def get_available_providers():
+    """Get list of available LLM providers"""
+    return {
+        "providers": [
+            {
+                "id": "openai",
+                "name": "OpenAI",
+                "description": "GPT-4o and other OpenAI models",
+                "signup_url": "https://platform.openai.com/signup",
+                "models": ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"]
+            },
+            {
+                "id": "anthropic",
+                "name": "Anthropic",
+                "description": "Claude models for advanced reasoning",
+                "signup_url": "https://console.anthropic.com",
+                "models": ["claude-sonnet-4-20250514", "claude-3-5-sonnet-20241022"]
+            },
+            {
+                "id": "google",
+                "name": "Google AI",
+                "description": "Gemini models",
+                "signup_url": "https://aistudio.google.com/apikey",
+                "models": ["gemini-1.5-flash", "gemini-1.5-pro"]
+            }
+        ]
+    }

@@ -232,3 +232,17 @@ export interface DatasetDeleteResult {
   deleted_datasets: Array<{ id: string; name: string }>
   deleted_context?: { id: string; name: string }
 }
+
+export interface LLMSettings {
+  has_settings: boolean
+  provider?: string
+  is_configured: boolean
+}
+
+export interface LLMProvider {
+  id: string
+  name: string
+  description: string
+  signup_url: string
+  models: string[]
+}
