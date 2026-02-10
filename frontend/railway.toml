@@ -3,6 +3,6 @@ builder = "nixpacks"
 buildCommand = "npm install && npm run build"
 
 [deploy]
-startCommand = "bash start.sh"
+startCommand = "sh start.sh"
 healthcheckPath = "/"
 healthcheckTimeout = 300
