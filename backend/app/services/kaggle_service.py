@@ -255,7 +255,7 @@ class KaggleService:
 
         # Source info
         lines.append(f"**Source:** {metadata.get('url', 'Kaggle')}")
-        lines.append(f"**Platform:** Kaggle")
+        lines.append("**Platform:** Kaggle")
         if metadata.get('creator'):
             lines.append(f"**Creator:** {metadata['creator']}")
         if metadata.get('license'):

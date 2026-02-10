@@ -198,7 +198,7 @@ Example: ["How do I filter rows in a DataFrame?", "What's the difference between
             follow_up_suggestions = follow_ups[:3]
         else:
             follow_up_suggestions = None
-    except:
+    except Exception:
         follow_up_suggestions = None
 
     # Extract source citations

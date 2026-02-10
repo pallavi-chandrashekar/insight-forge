@@ -58,7 +58,7 @@ async def populate_existing_datasets():
                 print(f"  📦 Datasets in context: {dataset_count}")
 
                 if dataset_count == 0:
-                    print(f"  ⏭️  Skipping (no datasets)")
+                    print("  ⏭️  Skipping (no datasets)")
                     print()
                     continue
 
@@ -75,7 +75,7 @@ async def populate_existing_datasets():
             print()
 
     print("=" * 60)
-    print(f"✨ Population complete!")
+    print("✨ Population complete!")
     print(f"   ✅ Successful: {success_count}")
     print(f"   ❌ Errors: {error_count}")
     print("=" * 60)

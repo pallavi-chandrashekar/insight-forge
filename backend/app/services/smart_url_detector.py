@@ -233,7 +233,7 @@ class SmartURLDetector:
                     return False
 
             return True
-        except:
+        except Exception:
             return False
 
     @classmethod
@@ -243,7 +243,7 @@ class SmartURLDetector:
             text = content.decode('utf-8', errors='ignore').strip()
             return (text.startswith('{') or text.startswith('[')) and \
                    ('"' in text or "'" in text)
-        except:
+        except Exception:
             return False
 
     @classmethod
@@ -388,7 +388,7 @@ class SmartURLDetector:
 
                     markdown_lines = [f"# {title_text}\n"]
                     markdown_lines.append(f"**Source:** {url}\n")
-                    markdown_lines.append(f"**Platform:** Kaggle\n")
+                    markdown_lines.append("**Platform:** Kaggle\n")
                     markdown_lines.append("---\n")
 
                     # Extract description/about section
