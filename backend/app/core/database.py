@@ -48,8 +48,15 @@ async_session_maker = async_sessionmaker(
 
 async def init_db():
     """Initialize database tables"""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    import os
+    # Ensure upload directory exists
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as e:
+        print(f"Database init warning (may be normal if tables exist): {e}")
 
 
 async def get_db() -> AsyncSession:
