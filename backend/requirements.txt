@@ -59,7 +59,7 @@ python-dateutil==2.9.0
 pytz==2024.2
 
 # Monitoring & Logging
-structlog==24.4.0
+structlog==25.5.0
 prometheus-client==0.21.0
 
 # Statistics & ML
