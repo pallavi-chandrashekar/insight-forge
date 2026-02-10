@@ -361,7 +361,7 @@ cd frontend && npm test
 - [x] Natural language queries powered by AI
 - [x] AI-suggested visualizations
 - [x] Multi-user authentication and dataset isolation
-- [x] **Bring Your Own API Key (BYOK) with multi-provider support**
+- [x] Bring Your Own API Key (BYOK) with multi-provider support**
 - [ ] Real-time collaborative querying
 - [ ] Scheduled data refresh from URLs
 - [ ] Custom dashboard builder
