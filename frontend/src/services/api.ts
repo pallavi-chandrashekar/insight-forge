@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios'
-import type { User, Token, Dataset, DatasetPreview, Query, QueryHistoryItem, Visualization, VizSuggestion, NLVizResponse, SmartImportResponse, SmartImportContextResult, SupportedPlatforms, KaggleImportResponse, ContextChatRequest, ContextChatResponse, DatasetDeleteInfo, DatasetDeleteResult, KaggleCredentials, LLMSettings, LLMProvider } from '../types'
+import type { User, Token, Dataset, DatasetPreview, Query, QueryHistoryItem, Visualization, VizSuggestion, NLVizResponse, SmartImportResponse, SmartImportContextResult, SupportedPlatforms, KaggleImportResponse, ContextChatRequest, ContextChatResponse, DatasetDeleteInfo, DatasetDeleteResult, KaggleCredentials, LLMSettings, LLMProvider, LLMStatus } from '../types'
 
 // Use environment variable for API URL, fallback to /api for local dev
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
@@ -116,6 +116,11 @@ export const authAPI = {
   getLLMProviders: async () => {
     const { data } = await api.get<{ providers: LLMProvider[] }>('/auth/llm-providers')
     return data.providers
+  },
+
+  getLLMStatus: async () => {
+    const { data } = await api.get<LLMStatus>('/auth/llm-status')
+    return data
   },
 }
 

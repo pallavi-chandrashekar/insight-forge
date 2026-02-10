@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { authAPI } from '../services/api'
-import type { LLMSettings, LLMProvider, KaggleCredentials } from '../types'
+import type { LLMSettings, LLMProvider, KaggleCredentials, LLMStatus } from '../types'
 
 export default function Settings() {
   const [llmSettings, setLLMSettings] = useState<LLMSettings | null>(null)
+  const [llmStatus, setLLMStatus] = useState<LLMStatus | null>(null)
   const [providers, setProviders] = useState<LLMProvider[]>([])
   const [kaggleCredentials, setKaggleCredentials] = useState<KaggleCredentials | null>(null)
   const [loading, setLoading] = useState(true)
@@ -24,14 +25,16 @@ export default function Settings() {
   const loadSettings = async () => {
     try {
       setLoading(true)
-      const [llm, providerList, kaggle] = await Promise.all([
+      const [llm, providerList, kaggle, status] = await Promise.all([
         authAPI.getLLMSettings(),
         authAPI.getLLMProviders(),
         authAPI.getKaggleCredentials(),
+        authAPI.getLLMStatus(),
       ])
       setLLMSettings(llm)
       setProviders(providerList)
       setKaggleCredentials(kaggle)
+      setLLMStatus(status)
       if (llm.provider) {
         setSelectedProvider(llm.provider)
       }
@@ -156,6 +159,35 @@ export default function Settings() {
           Configure your AI provider to enable natural language queries, visualization suggestions, and chat features.
           Your API key is encrypted and stored securely.
         </p>
+
+        {/* Show current status */}
+        {llmStatus?.using_free_tier && !llmSettings?.is_configured && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <span className="text-blue-700 font-medium">Using free tier </span>
+                <span className="text-blue-600">(limited requests). Add your own API key for better performance.</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!llmStatus?.is_available && (
+          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-yellow-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div>
+                <span className="text-yellow-700 font-medium">AI features disabled. </span>
+                <span className="text-yellow-600">Add your API key below to enable natural language queries and AI suggestions.</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {llmSettings?.is_configured && (
           <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">

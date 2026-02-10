@@ -250,6 +250,15 @@ async def delete_llm_settings(
     return {"message": "LLM settings removed"}
 
 
+@router.get("/llm-status")
+async def get_llm_status(
+    current_user: User = Depends(get_current_user),
+):
+    """Get LLM configuration status for current user"""
+    from app.services.llm_helpers import get_llm_status
+    return get_llm_status(current_user)
+
+
 @router.get("/llm-providers")
 async def get_available_providers():
     """Get list of available LLM providers"""

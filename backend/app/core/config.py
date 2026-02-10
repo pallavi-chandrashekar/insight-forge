@@ -43,9 +43,13 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE: int = 100  # MB
 
     # LLM (Optional - users provide their own keys)
-    API_KEY: str = ""  # Optional fallback key; users configure their own in Settings
+    API_KEY: str = ""  # Legacy - kept for backward compatibility
     LLM_MODEL: str = "claude-sonnet-4-20250514"
     LLM_MAX_TOKENS: int = 4096
+
+    # Free tier fallback (Google Gemini)
+    GEMINI_FREE_API_KEY: str = ""  # Optional: Gemini API key for free tier fallback
+    GEMINI_FREE_MODEL: str = "gemini-1.5-flash"  # Fast, free model
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"

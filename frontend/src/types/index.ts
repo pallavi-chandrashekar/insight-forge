@@ -239,6 +239,14 @@ export interface LLMSettings {
   is_configured: boolean
 }
 
+export interface LLMStatus {
+  has_own_key: boolean
+  provider?: string
+  has_free_fallback: boolean
+  is_available: boolean
+  using_free_tier: boolean
+}
+
 export interface LLMProvider {
   id: string
   name: string
