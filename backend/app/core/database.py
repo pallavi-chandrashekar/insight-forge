@@ -52,9 +52,13 @@ async def init_db():
     # Ensure upload directory exists
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
+    # Import all models to register them with Base.metadata
+    from app.models import user, dataset, query, visualization, context
+
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+        print("Database tables created successfully")
     except Exception as e:
         print(f"Database init warning (may be normal if tables exist): {e}")
 
