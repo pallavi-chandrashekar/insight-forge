@@ -4,6 +4,8 @@
 
 Upload any dataset. Ask questions in plain English. Get instant answers, visualizations, and insights — no SQL required.
 
+### 🌐 [Try the Live Demo](https://insight-forge-ui-production.up.railway.app) — no setup required
+
 ![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue?logo=typescript&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white)
@@ -57,11 +59,11 @@ InsightForge now supports **multi-provider LLM integration** with a BYOK model:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                         FRONTEND                            │
-│              React + TypeScript + Vite + Tailwind           │
-│     ┌──────────┐  ┌───────────┐  ┌──────────────────┐       │
-│     │ Data     │  │ Query     │  │ Visualization    │       │
-│     │ Upload   │  │ Interface │  │ Dashboard        │       │
-│     └──────────┘  └───────────┘  └──────────────────┘       │
+│              React + TypeScript + Vite + Tailwind            │
+│     ┌──────────┐  ┌───────────┐  ┌──────────────────┐      │
+│     │ Data      │  │ Query     │  │ Visualization    │      │
+│     │ Upload    │  │ Interface │  │ Dashboard        │      │
+│     └──────────┘  └───────────┘  └──────────────────┘      │
 │                        │                                    │
 │              ┌─────────┴─────────┐                          │
 │              │  BYOK Key Manager │                          │
@@ -71,19 +73,19 @@ InsightForge now supports **multi-provider LLM integration** with a BYOK model:
                           │ REST API (JWT Auth)
 ┌─────────────────────────┴───────────────────────────────────┐
 │                         BACKEND                             │
-│                    FastAPI + SQLAlchemy                     │
+│                    FastAPI + SQLAlchemy                      │
 │                                                             │
-│  ┌──────────┐  ┌──────────────┐  ┌───────────────────┐      │
-│  │ Auth     │  │ Data         │  │ Query Engine      │      │
-│  │ Service  │  │ Ingestion    │  │ (SQL/Pandas/NL)   │      │
-│  │ (JWT)    │  │ Service      │  │                   │      │
-│  └──────────┘  └──────────────┘  └────────┬──────────┘      │
+│  ┌──────────┐  ┌──────────────┐  ┌───────────────────┐     │
+│  │ Auth     │  │ Data         │  │ Query Engine       │     │
+│  │ Service  │  │ Ingestion    │  │ (SQL/Pandas/NL)    │     │
+│  │ (JWT)    │  │ Service      │  │                    │     │
+│  └──────────┘  └──────────────┘  └────────┬──────────┘     │
 │                                           │                 │
-│  ┌──────────┐  ┌──────────────┐  ┌────────┴──────────┐      │
-│  │ File     │  │ Viz          │  │ LLM Provider      │      │
-│  │ Parser   │  │ Generator    │  │ Router (BYOK)     │      │
-│  │ Engine   │  │ (Plotly)     │  │ Claude │ OpenAI   │      │
-│  └──────────┘  └──────────────┘  └───────────────────┘      │
+│  ┌──────────┐  ┌──────────────┐  ┌────────┴──────────┐     │
+│  │ File     │  │ Viz          │  │ LLM Provider       │     │
+│  │ Parser   │  │ Generator    │  │ Router (BYOK)      │     │
+│  │ Engine   │  │ (Plotly)     │  │ Claude │ OpenAI    │     │
+│  └──────────┘  └──────────────┘  └───────────────────┘     │
 │                                                             │
 └──────────┬──────────────────────────────┬───────────────────┘
            │                              │
@@ -131,6 +133,7 @@ InsightForge now supports **multi-provider LLM integration** with a BYOK model:
 ### 🔒 Multi-User Architecture
 - JWT authentication with secure token refresh
 - User-scoped datasets — complete tenant isolation
+- Role-based access patterns
 - bcrypt password hashing
 
 ### 🐳 Production-Ready
@@ -366,7 +369,7 @@ cd frontend && npm test
 - [x] Natural language queries powered by AI
 - [x] AI-suggested visualizations
 - [x] Multi-user authentication and dataset isolation
-- [x] **Bring Your Own API Key (BYOK) with multi-provider support**
+- [x] Bring Your Own API Key (BYOK) with multi-provider support**
 - [ ] Real-time collaborative querying
 - [ ] Scheduled data refresh from URLs
 - [ ] Custom dashboard builder
