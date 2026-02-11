@@ -23,6 +23,7 @@ Data teams waste hours writing SQL queries, cleaning exports, and building one-o
 
 InsightForge bridges that gap. Upload your data in any format, ask questions in plain English, and get:
 - **Instant query results** — AI translates natural language → SQL/Pandas
+- **Context-aware answers** — upload a context file so the AI understands your data like your team does
 - **Smart visualizations** — AI suggests the best chart type for your data
 - **Multi-user isolation** — every user's datasets and queries are scoped and secure
 - **Bring Your Own Key** — use your own Claude or OpenAI API key, or fall back to the server default
@@ -110,6 +111,12 @@ InsightForge now supports **multi-provider LLM integration** with a BYOK model:
 - Supports SQL, Pandas-style filtering, and plain English — all from one interface
 - Query history and result caching for performance
 
+### 📄 Context File Support
+- Upload a context file alongside your data to describe what columns mean, business rules, and data relationships
+- InsightForge injects this context into every AI prompt for dramatically better accuracy
+- Optional — works without one, but transforms answer quality with one
+- Think of it as giving the AI the same tribal knowledge a new engineer would need
+
 ### 🔑 Bring Your Own API Key (BYOK)
 - Use your own Anthropic Claude or OpenAI API key
 - Seamless fallback to server-configured default
@@ -119,13 +126,11 @@ InsightForge now supports **multi-provider LLM integration** with a BYOK model:
 ### 📊 Smart Visualizations
 - **AI-Suggested Charts**: Analyzes your data types and recommends optimal visualizations
 - **Interactive Plotly Charts**: Bar, line, scatter, heatmap, and more
-- **Tableau Export**: One-click export when Tableau credentials are configured
 - Saved visualizations per user
 
 ### 🔒 Multi-User Architecture
 - JWT authentication with secure token refresh
 - User-scoped datasets — complete tenant isolation
-- Role-based access patterns
 - bcrypt password hashing
 
 ### 🐳 Production-Ready
@@ -361,7 +366,7 @@ cd frontend && npm test
 - [x] Natural language queries powered by AI
 - [x] AI-suggested visualizations
 - [x] Multi-user authentication and dataset isolation
-- [x] Bring Your Own API Key (BYOK) with multi-provider support**
+- [x] **Bring Your Own API Key (BYOK) with multi-provider support**
 - [ ] Real-time collaborative querying
 - [ ] Scheduled data refresh from URLs
 - [ ] Custom dashboard builder
