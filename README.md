@@ -59,11 +59,11 @@ InsightForge now supports **multi-provider LLM integration** with a BYOK model:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                         FRONTEND                            │
-│              React + TypeScript + Vite + Tailwind            │
-│     ┌──────────┐  ┌───────────┐  ┌──────────────────┐      │
-│     │ Data      │  │ Query     │  │ Visualization    │      │
-│     │ Upload    │  │ Interface │  │ Dashboard        │      │
-│     └──────────┘  └───────────┘  └──────────────────┘      │
+│              React + TypeScript + Vite + Tailwind           │
+│     ┌──────────┐  ┌───────────┐  ┌──────────────────┐       │
+│     │ Data     │  │ Query     │  │ Visualization    │       │
+│     │ Upload   │  │ Interface │  │ Dashboard        │       │
+│     └──────────┘  └───────────┘  └──────────────────┘       │
 │                        │                                    │
 │              ┌─────────┴─────────┐                          │
 │              │  BYOK Key Manager │                          │
@@ -73,19 +73,19 @@ InsightForge now supports **multi-provider LLM integration** with a BYOK model:
                           │ REST API (JWT Auth)
 ┌─────────────────────────┴───────────────────────────────────┐
 │                         BACKEND                             │
-│                    FastAPI + SQLAlchemy                      │
+│                    FastAPI + SQLAlchemy                     │
 │                                                             │
-│  ┌──────────┐  ┌──────────────┐  ┌───────────────────┐     │
-│  │ Auth     │  │ Data         │  │ Query Engine       │     │
-│  │ Service  │  │ Ingestion    │  │ (SQL/Pandas/NL)    │     │
-│  │ (JWT)    │  │ Service      │  │                    │     │
-│  └──────────┘  └──────────────┘  └────────┬──────────┘     │
+│  ┌──────────┐  ┌──────────────┐  ┌───────────────────┐      │
+│  │ Auth     │  │ Data         │  │ Query Engine      │      │
+│  │ Service  │  │ Ingestion    │  │ (SQL/Pandas/NL)   │      │
+│  │ (JWT)    │  │ Service      │  │                   │      │
+│  └──────────┘  └──────────────┘  └────────┬──────────┘      │
 │                                           │                 │
-│  ┌──────────┐  ┌──────────────┐  ┌────────┴──────────┐     │
-│  │ File     │  │ Viz          │  │ LLM Provider       │     │
-│  │ Parser   │  │ Generator    │  │ Router (BYOK)      │     │
-│  │ Engine   │  │ (Plotly)     │  │ Claude │ OpenAI    │     │
-│  └──────────┘  └──────────────┘  └───────────────────┘     │
+│  ┌──────────┐  ┌──────────────┐  ┌────────┴──────────┐      │
+│  │ File     │  │ Viz          │  │ LLM Provider      │      │
+│  │ Parser   │  │ Generator    │  │ Router (BYOK)     │      │
+│  │ Engine   │  │ (Plotly)     │  │ Claude │ OpenAI   │      │
+│  └──────────┘  └──────────────┘  └───────────────────┘      │
 │                                                             │
 └──────────┬──────────────────────────────┬───────────────────┘
            │                              │
