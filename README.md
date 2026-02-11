@@ -103,7 +103,7 @@ InsightForge now supports **multi-provider LLM integration** with a BYOK model:
 
 ### 📥 Multi-Format Data Ingestion
 - **File Upload**: CSV, JSON, Excel (.xlsx), Parquet
-- **URL Import**: Fetch datasets from any public URL
+- **URL Import**: Paste a Kaggle, GitHub, or any public URL — InsightForge downloads the data *and* scrapes the page for context (column descriptions, dataset metadata) automatically
 - **Web Scraping**: Extract tables from web pages automatically
 - Schema detection, type inference, and data profiling on upload
 
@@ -128,6 +128,7 @@ InsightForge now supports **multi-provider LLM integration** with a BYOK model:
 ### 📊 Smart Visualizations
 - **AI-Suggested Charts**: Analyzes your data types and recommends optimal visualizations
 - **Interactive Plotly Charts**: Bar, line, scatter, heatmap, and more
+- **Tableau Export**: One-click export when Tableau credentials are configured
 - Saved visualizations per user
 
 ### 🔒 Multi-User Architecture
@@ -369,7 +370,7 @@ cd frontend && npm test
 - [x] Natural language queries powered by AI
 - [x] AI-suggested visualizations
 - [x] Multi-user authentication and dataset isolation
-- [x] Bring Your Own API Key (BYOK) with multi-provider support**
+- [x] **Bring Your Own API Key (BYOK) with multi-provider support**
 - [ ] Real-time collaborative querying
 - [ ] Scheduled data refresh from URLs
 - [ ] Custom dashboard builder
